@@ -26,7 +26,7 @@ A platform for discovering locally owned retailers and restaurants with interact
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 
-### Starting the Application
+### Development Environment
 
 1. Clone the repository:
 
@@ -35,17 +35,89 @@ git clone <repository-url>
 cd localspot
 ```
 
-2. Build and start the Docker containers:
+2. Build and start the Docker containers for development:
 
 ```bash
+# Using docker-compose directly
 docker-compose up -d
+
+# OR using the setup script
+chmod +x docker-setup.sh  # Make the script executable (first time only)
+./docker-setup.sh dev
 ```
 
-This will start both the application server and the PostgreSQL database.
+This will start both the application server and the PostgreSQL database with hot-reloading enabled.
 
 3. Access the application:
 
 Open your browser and go to http://localhost:5000
+
+### Production Environment
+
+For a production environment, use the production configuration:
+
+1. Create a `.env` file with your production settings:
+
+```bash
+cp .env.example .env
+```
+
+2. Edit the `.env` file and set secure values for the environment variables:
+
+```
+NODE_ENV=production
+SESSION_SECRET=a_very_secure_random_string
+POSTGRES_PASSWORD=a_secure_database_password
+```
+
+3. Build and start the production containers:
+
+```bash
+docker-compose -f docker-compose.production.yml up -d
+```
+
+This will build an optimized production image with smaller size and better security.
+
+### Deployment
+
+For deploying to a production server:
+
+1. Install Docker and Docker Compose on your server.
+
+2. Copy the following files to your server:
+   - `Dockerfile.production`
+   - `docker-compose.production.yml`
+   - `docker-entrypoint.sh`
+   - `.env` (with your production settings)
+   - Your application code
+
+3. Run the production stack:
+
+```bash
+docker-compose -f docker-compose.production.yml up -d
+```
+
+4. Set up a reverse proxy (like Nginx) to forward requests to your application and handle SSL:
+
+```nginx
+server {
+    listen 80;
+    server_name yourdomainname.com;
+    
+    location / {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+5. Use a tool like Certbot to set up SSL for your domain.
+
+6. For automatic deployment, consider setting up a CI/CD pipeline using GitHub Actions or similar tools.
 
 ### Stopping the Application
 
