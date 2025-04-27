@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: development
     environment:
       - NODE_ENV=test
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/localspot_test

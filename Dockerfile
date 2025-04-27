@@ -1,22 +1,74 @@
-FROM node:20-slim
+# Base stage for shared dependencies
+FROM node:20-slim AS base
 
-# Install PostgreSQL client tools and curl for healthchecks
-RUN apt-get update && apt-get install -y postgresql-client curl && rm -rf /var/lib/apt/lists/*
+# Install common dependencies for all stages
+RUN apt-get update && apt-get install -y \
+    postgresql-client \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Copy package files first for better caching
 COPY package.json package-lock.json ./
 
-# Install dependencies
+# Development stage - builds on the base image
+FROM base AS development
+
+# Install all dependencies including dev dependencies
 RUN npm ci
 
-# Copy rest of the app
-COPY . .
-
-# Make entrypoint script executable
+# Copy entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Copy application code (will be overridden by volume mounts in development)
+COPY . .
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV PORT=5000
+
+# Expose the port
+EXPOSE 5000
+
+# Set health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:5000/api/health || exit 1
+
+# Use the entrypoint script
+ENTRYPOINT ["docker-entrypoint.sh"]
+
+# Default command for development
+CMD ["npm", "run", "dev"]
+
+# Production build stage
+FROM base AS build
+
+# Install all dependencies for build
+RUN npm ci
+
+# Copy application code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Production runtime stage - minimal image with only what's needed
+FROM base AS production
+
+# Install only production dependencies
+RUN npm ci --production
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Copy built application from build stage
+COPY --from=build /app/client/dist ./client/dist
+COPY --from=build /app/server ./server
+COPY --from=build /app/shared ./shared
+COPY --from=build /app/drizzle.config.ts ./
 
 # Set environment variables
 ENV NODE_ENV=production
@@ -25,8 +77,12 @@ ENV PORT=5000
 # Expose the port
 EXPOSE 5000
 
-# Use our entrypoint script
+# Set health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:5000/api/health || exit 1
+
+# Use the entrypoint script
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-# Start the application
-CMD ["npm", "run", "dev"]
+# Start the application in production mode
+CMD ["node", "server/index.js"]

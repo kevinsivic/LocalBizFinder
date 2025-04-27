@@ -26,6 +26,15 @@ A platform for discovering locally owned retailers and restaurants with interact
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 
+### Docker Architecture
+
+The application uses a multi-stage Docker build process that optimizes for both development and production:
+
+- **Base stage**: Contains common dependencies for all environments
+- **Development stage**: Includes full dev dependencies with hot-reloading and volume mounts
+- **Build stage**: Compiles and bundles application for production
+- **Production stage**: Minimal image with only production dependencies and built assets
+
 ### Development Environment
 
 1. Clone the repository:
@@ -46,7 +55,7 @@ chmod +x docker-setup.sh  # Make the script executable (first time only)
 ./docker-setup.sh dev
 ```
 
-This will start both the application server and the PostgreSQL database with hot-reloading enabled.
+This will start both the application server and the PostgreSQL database with hot-reloading enabled. The development environment uses volume mounts to enable code changes without rebuilding the container.
 
 3. Access the application:
 
