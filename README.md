@@ -73,7 +73,11 @@ POSTGRES_PASSWORD=a_secure_database_password
 3. Build and start the production containers:
 
 ```bash
+# Using docker-compose directly
 docker-compose -f docker-compose.production.yml up -d
+
+# OR using the setup script
+./docker-setup.sh prod
 ```
 
 This will build an optimized production image with smaller size and better security.
@@ -94,6 +98,13 @@ For deploying to a production server:
 3. Run the production stack:
 
 ```bash
+# Copy the setup script and make it executable
+chmod +x docker-setup.sh
+
+# Run the production stack
+./docker-setup.sh prod
+
+# Or manually with docker-compose
 docker-compose -f docker-compose.production.yml up -d
 ```
 
@@ -117,7 +128,16 @@ server {
 
 5. Use a tool like Certbot to set up SSL for your domain.
 
-6. For automatic deployment, consider setting up a CI/CD pipeline using GitHub Actions or similar tools.
+6. For automatic deployment, a GitHub Actions workflow is already set up in `.github/workflows/docker-image.yml`. You'll need to:
+
+   - Configure the following secrets in your GitHub repository:
+     - `SSH_HOST`: Your server's hostname or IP address
+     - `SSH_USERNAME`: SSH username for your server
+     - `SSH_PRIVATE_KEY`: Private key for SSH authentication
+
+   - Uncomment the deployment section in the workflow file and update the deployment path.
+
+   The workflow will automatically build and test your application on each push to the main branch, and deploy it if all tests pass.
 
 ### Stopping the Application
 
@@ -155,6 +175,25 @@ When developing with Docker, you can take advantage of the live-reload capabilit
    ```bash
    docker-compose exec postgres psql -U postgres -d localspot
    ```
+
+6. Running tests with Docker:
+   ```bash
+   # Using docker-compose directly
+   docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
+   
+   # OR using the setup script
+   ./docker-setup.sh test
+   ```
+
+7. Creating database backups:
+   ```bash
+   # Backup development database
+   ./docker-setup.sh backup
+   
+   # Backup production database
+   ./docker-setup.sh backup:prod
+   ```
+   Backups are stored in the `./backups` directory with timestamps.
 
 ## Development
 

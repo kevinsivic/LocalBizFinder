@@ -53,6 +53,28 @@ logs() {
     fi
 }
 
+# Function to run tests
+run_tests() {
+    echo "Running tests with Docker..."
+    docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
+    docker-compose -f docker-compose.test.yml down
+    echo "Tests completed"
+}
+
+# Function to backup database
+backup_db() {
+    echo "Creating database backup..."
+    mkdir -p backups
+    
+    if [ "$1" == "prod" ]; then
+        docker-compose -f docker-compose.production.yml -f docker-compose.backup.yml run --rm backup
+    else
+        docker-compose -f docker-compose.backup.yml run --rm backup
+    fi
+    
+    echo "Backup created in ./backups directory"
+}
+
 # Help message
 show_help() {
     echo "Usage: ./docker-setup.sh [command]"
@@ -63,6 +85,9 @@ show_help() {
     echo "  stop:prod  - Stop production environment" 
     echo "  logs       - Show development logs"
     echo "  logs:prod  - Show production logs"
+    echo "  test       - Run tests in Docker environment"
+    echo "  backup     - Backup development database"
+    echo "  backup:prod - Backup production database"
     echo "  clean      - Remove all containers and volumes"
     echo "  help       - Show this help message"
 }
@@ -72,6 +97,7 @@ clean() {
     echo "Removing all containers and volumes..."
     docker-compose down -v
     docker-compose -f docker-compose.production.yml down -v 2>/dev/null
+    docker-compose -f docker-compose.test.yml down -v 2>/dev/null
     echo "Cleanup completed"
 }
 
@@ -94,6 +120,15 @@ case "$1" in
         ;;
     logs:prod)
         logs "prod"
+        ;;
+    test)
+        run_tests
+        ;;
+    backup)
+        backup_db "dev"
+        ;;
+    backup:prod)
+        backup_db "prod"
         ;;
     clean)
         clean
