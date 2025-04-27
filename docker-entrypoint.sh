@@ -1,18 +1,61 @@
 #!/bin/bash
 set -e
 
-# Wait for PostgreSQL to be available
-echo "Waiting for PostgreSQL..."
-until PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U $POSTGRES_USER -d $POSTGRES_DB -c '\l'; do
-  echo "PostgreSQL is unavailable - sleeping"
-  sleep 1
-done
+# Function to wait for database
+wait_for_db() {
+  local retries=30
+  local wait_time=2
+  
+  echo "🔄 Waiting for PostgreSQL..."
+  
+  for i in $(seq 1 $retries); do
+    if PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U $POSTGRES_USER -d $POSTGRES_DB -c '\l' &> /dev/null; then
+      echo "✅ PostgreSQL is available!"
+      return 0
+    fi
+    
+    echo "⏳ PostgreSQL is unavailable - attempt $i/$retries - waiting ${wait_time}s..."
+    sleep $wait_time
+  done
+  
+  echo "❌ Could not connect to PostgreSQL after $retries attempts. Exiting."
+  exit 1
+}
 
-echo "PostgreSQL is up - executing drizzle migrations"
+# Function to run database migrations
+run_migrations() {
+  echo "🔄 Running database migrations with Drizzle..."
+  
+  if npx drizzle-kit push:pg; then
+    echo "✅ Database migrations completed successfully."
+  else
+    echo "❌ Database migration failed."
+    if [ "$NODE_ENV" = "production" ]; then
+      echo "⚠️ Production environment - failing due to migration errors."
+      exit 1
+    else
+      echo "⚠️ Development environment - continuing despite migration errors."
+    fi
+  fi
+}
 
-# Run migrations
-npx drizzle-kit push:pg
+# Main script logic
+echo "🚀 Starting LocalSpot in $NODE_ENV mode..."
+
+# Skip database wait in test mode with --skip-db flag
+if [[ "$1" == "--skip-db" ]]; then
+  echo "⏩ Skipping database wait and migrations..."
+  shift # Remove the --skip-db argument
+else
+  wait_for_db
+  run_migrations
+fi
+
+# Print environment info
+echo "💻 Node.js version: $(node --version)"
+echo "📦 NPM version: $(npm --version)"
+echo "🌐 Environment: $NODE_ENV"
 
 # Start the application
-echo "Starting application..."
+echo "🚀 Starting application..."
 exec "$@"
