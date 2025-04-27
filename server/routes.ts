@@ -63,7 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const businessData = insertBusinessSchema.parse(req.body);
       const business = await storage.createBusiness({
         ...businessData,
-        createdBy: req.user.id,
+        createdBy: req.user!.id, // User is guaranteed to exist due to requireAuth middleware
       });
       res.status(201).json(business);
     } catch (error) {
@@ -87,7 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Check if user is admin or the creator of the business
-    if (!req.user.isAdmin && business.createdBy !== req.user.id) {
+    if (!req.user!.isAdmin && business.createdBy !== req.user!.id) {
       return res.status(403).json({ message: "You don't have permission to update this business" });
     }
 
@@ -116,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Check if user is admin or the creator of the business
-    if (!req.user.isAdmin && business.createdBy !== req.user.id) {
+    if (!req.user!.isAdmin && business.createdBy !== req.user!.id) {
       return res.status(403).json({ message: "You don't have permission to delete this business" });
     }
 

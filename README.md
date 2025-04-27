@@ -195,6 +195,21 @@ When developing with Docker, you can take advantage of the live-reload capabilit
    ```
    Backups are stored in the `./backups` directory with timestamps.
 
+8. Managing Docker volumes:
+   ```bash
+   # Backup volume data
+   ./docker-setup.sh volume:backup       # Development volume
+   ./docker-setup.sh volume:backup:prod  # Production volume
+   
+   # List available volume backups
+   ./docker-setup.sh volume:list
+   
+   # Restore volume from backup
+   ./docker-setup.sh volume:restore ./volume_backups/localspot_postgres-data_20250427_120000.tar.gz
+   ./docker-setup.sh volume:restore:prod ./volume_backups/localspot_postgres-data_20250427_120000.tar.gz
+   ```
+   Volume backups are stored in the `./volume_backups` directory.
+
 ## Development
 
 ### Environment Variables

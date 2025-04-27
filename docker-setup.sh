@@ -75,21 +75,58 @@ backup_db() {
     echo "Backup created in ./backups directory"
 }
 
+# Function to backup Docker volume
+backup_volume() {
+    if [ "$1" == "prod" ]; then
+        VOLUME_NAME=localspot_postgres-data
+        echo "Backing up production Docker volume: $VOLUME_NAME"
+    else
+        VOLUME_NAME=localspot_postgres-data
+        echo "Backing up development Docker volume: $VOLUME_NAME"
+    fi
+    
+    ./docker-volume-backup.sh backup "$VOLUME_NAME"
+}
+
+# Function to restore Docker volume
+restore_volume() {
+    if [ -z "$2" ]; then
+        echo "Error: Backup file is required for volume restore operation."
+        echo "Usage: $0 volume:restore [dev|prod] /path/to/backup.tar.gz"
+        exit 1
+    fi
+    
+    if [ "$1" == "prod" ]; then
+        VOLUME_NAME=localspot_postgres-data
+        echo "Restoring production Docker volume: $VOLUME_NAME"
+    else
+        VOLUME_NAME=localspot_postgres-data
+        echo "Restoring development Docker volume: $VOLUME_NAME"
+    fi
+    
+    ./docker-volume-backup.sh restore "$VOLUME_NAME" "$2"
+}
+
 # Help message
 show_help() {
     echo "Usage: ./docker-setup.sh [command]"
     echo "Commands:"
-    echo "  dev        - Start development environment"
-    echo "  prod       - Start production environment"
-    echo "  stop       - Stop development environment"
-    echo "  stop:prod  - Stop production environment" 
-    echo "  logs       - Show development logs"
-    echo "  logs:prod  - Show production logs"
-    echo "  test       - Run tests in Docker environment"
-    echo "  backup     - Backup development database"
-    echo "  backup:prod - Backup production database"
-    echo "  clean      - Remove all containers and volumes"
-    echo "  help       - Show this help message"
+    echo "  dev              - Start development environment"
+    echo "  prod             - Start production environment"
+    echo "  stop             - Stop development environment"
+    echo "  stop:prod        - Stop production environment" 
+    echo "  logs             - Show development logs"
+    echo "  logs:prod        - Show production logs"
+    echo "  test             - Run tests in Docker environment"
+    echo "  backup           - Backup development database"
+    echo "  backup:prod      - Backup production database"
+    echo "  volume:backup    - Backup development volume"
+    echo "  volume:backup:prod - Backup production volume"
+    echo "  volume:restore   - Restore development volume (requires backup file)"
+    echo "  volume:restore:prod - Restore production volume (requires backup file)"
+    echo "  volume:list      - List volume backups"
+    echo "  clean            - Remove all containers and volumes"
+    echo "  help             - Show this help message"
 }
 
 # Clean everything
@@ -129,6 +166,21 @@ case "$1" in
         ;;
     backup:prod)
         backup_db "prod"
+        ;;
+    volume:backup)
+        backup_volume "dev"
+        ;;
+    volume:backup:prod)
+        backup_volume "prod"
+        ;;
+    volume:restore)
+        restore_volume "dev" "$2"
+        ;;
+    volume:restore:prod)
+        restore_volume "prod" "$2"
+        ;;
+    volume:list)
+        ./docker-volume-backup.sh list
         ;;
     clean)
         clean
