@@ -88,13 +88,13 @@ const Header = () => {
                 <Button 
                   variant="outline" 
                   className="border-neutral-300 text-neutral-700"
-                  onClick={() => navigate("/auth")}
+                  onClick={() => navigate("/login")}
                 >
                   Log in
                 </Button>
                 <Button 
                   className="bg-primary text-white"
-                  onClick={() => navigate("/auth")}
+                  onClick={() => navigate("/register")}
                 >
                   Sign up
                 </Button>
@@ -169,7 +169,7 @@ const Header = () => {
                         variant="outline" 
                         className="w-full"
                         onClick={() => {
-                          navigate("/auth");
+                          navigate("/login");
                           setMobileMenuOpen(false);
                         }}
                       >
@@ -179,7 +179,7 @@ const Header = () => {
                       <Button 
                         className="w-full"
                         onClick={() => {
-                          navigate("/auth");
+                          navigate("/register");
                           setMobileMenuOpen(false);
                         }}
                       >

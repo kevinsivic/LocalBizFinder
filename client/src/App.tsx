@@ -6,16 +6,25 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home-page";
-import AuthPage from "@/pages/auth-page";
+import LoginPage from "@/pages/login-page";
+import RegisterPage from "@/pages/register-page";
 import AdminPage from "@/pages/admin-page";
-import { ProtectedRoute, AdminRoute } from "./lib/protected-route";
+import { AdminRoute } from "./lib/protected-route";
 
 function Router() {
   return (
     <Switch>
-      <ProtectedRoute path="/" component={HomePage} />
-      <Route path="/auth" component={AuthPage} />
+      {/* Public route for the homepage - no authentication required */}
+      <Route path="/" component={HomePage} />
+      
+      {/* Authentication routes */}
+      <Route path="/login" component={LoginPage} />
+      <Route path="/register" component={RegisterPage} />
+      
+      {/* Protected admin route */}
       <AdminRoute path="/admin" component={AdminPage} />
+      
+      {/* 404 page */}
       <Route component={NotFound} />
     </Switch>
   );
