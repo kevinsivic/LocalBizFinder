@@ -35,17 +35,21 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="flex-shrink-0 flex items-center">
-              <MapPin className="text-primary h-6 w-6 mr-2" />
-              <span className="text-xl font-semibold text-neutral-800">LocalSpot</span>
-            </Link>
+            <div className="flex-shrink-0 flex items-center">
+              <Link href="/">
+                <div className="flex items-center">
+                  <MapPin className="text-primary h-6 w-6 mr-2" />
+                  <span className="text-xl font-semibold text-neutral-800">LocalSpot</span>
+                </div>
+              </Link>
+            </div>
             <nav className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <Link href="/">
-                <a className={`${
+                <div className={`${
                   location === "/" ? "border-primary text-neutral-800" : "border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700"
                 } border-b-2 px-1 pt-1 inline-flex items-center text-sm font-medium`}>
                   Discover
-                </a>
+                </div>
               </Link>
               <a href="#about" className="border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700 border-b-2 px-1 pt-1 inline-flex items-center text-sm font-medium">
                 About
@@ -113,11 +117,11 @@ const Header = () => {
               <SheetContent side="right" className="sm:max-w-sm">
                 <nav className="flex flex-col space-y-4 mt-6">
                   <Link href="/" onClick={() => setMobileMenuOpen(false)}>
-                    <a className={`${
+                    <div className={`${
                       location === "/" ? "bg-neutral-50 border-primary text-primary" : "border-transparent text-neutral-500 hover:bg-neutral-50 hover:border-neutral-300 hover:text-neutral-700"
                     } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}>
                       Discover
-                    </a>
+                    </div>
                   </Link>
                   <a href="#about" className="border-transparent text-neutral-500 hover:bg-neutral-50 hover:border-neutral-300 hover:text-neutral-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">
                     About
@@ -147,9 +151,9 @@ const Header = () => {
                         </a>
                         {user.isAdmin && (
                           <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
-                            <a className="block px-4 py-2 text-base font-medium text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100">
+                            <div className="block px-4 py-2 text-base font-medium text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100">
                               Admin Panel
-                            </a>
+                            </div>
                           </Link>
                         )}
                         <button

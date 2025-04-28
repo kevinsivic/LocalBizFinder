@@ -95,7 +95,7 @@ const Map = ({
   }, [businesses, onBusinessSelect]);
 
   return (
-    <div ref={mapRef} className="w-full h-full bg-neutral-100 relative" />
+    <div ref={mapRef} className="w-full h-full bg-neutral-100 relative z-0" />
   );
 };
 
