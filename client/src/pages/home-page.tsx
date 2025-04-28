@@ -78,7 +78,7 @@ const HomePage = () => {
       <main className="flex-grow flex flex-col lg:flex-row">
         <div className="flex-grow flex flex-col h-[calc(100vh-4rem)]">
           {/* Search and Filter Bar */}
-          <div className="bg-white border-b border-neutral-200 p-4 sm:px-6 lg:px-8">
+          <div className="bg-white border-b border-neutral-200 p-4 sm:px-6 lg:px-8 relative z-10">
             <div className="max-w-7xl mx-auto">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                 <div className="relative rounded-md shadow-sm flex-grow max-w-2xl">
@@ -177,7 +177,7 @@ const HomePage = () => {
               />
               
               {user && (
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
                   <Button
                     onClick={() => setIsAddBusinessOpen(true)}
                     className="items-center shadow-md"
