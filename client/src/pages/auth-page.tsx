@@ -94,14 +94,14 @@ const AuthPage = () => {
                   <TabsTrigger value="login">Login</TabsTrigger>
                   <TabsTrigger value="register">Register</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="login" className="pt-4">
                   <CardTitle className="text-xl text-center">Welcome Back</CardTitle>
                   <CardDescription className="text-center">
                     Login to your account to continue
                   </CardDescription>
                 </TabsContent>
-                
+
                 <TabsContent value="register" className="pt-4">
                   <CardTitle className="text-xl text-center">Create an Account</CardTitle>
                   <CardDescription className="text-center">
@@ -110,7 +110,7 @@ const AuthPage = () => {
                 </TabsContent>
               </Tabs>
             </CardHeader>
-            
+
             <CardContent>
               {activeTab === "login" ? (
                 <Form {...loginForm}>
@@ -133,7 +133,7 @@ const AuthPage = () => {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={loginForm.control}
                       name="password"
@@ -153,7 +153,7 @@ const AuthPage = () => {
                         </FormItem>
                       )}
                     />
-                    
+
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <Checkbox id="remember" />
@@ -164,12 +164,12 @@ const AuthPage = () => {
                           Remember me
                         </label>
                       </div>
-                      
+
                       <a href="#" className="text-sm font-medium text-primary hover:text-blue-700">
                         Forgot password?
                       </a>
                     </div>
-                    
+
                     <Button 
                       type="submit" 
                       className="w-full" 
@@ -205,7 +205,7 @@ const AuthPage = () => {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={registerForm.control}
                       name="password"
@@ -217,15 +217,13 @@ const AuthPage = () => {
                               type="password" 
                               placeholder="••••••••" 
                               {...field} 
-                              onChange={e => field.onChange(e.target.value)}
-                              value={field.value || ''}
                             />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={registerForm.control}
                       name="confirmPassword"
@@ -237,15 +235,13 @@ const AuthPage = () => {
                               type="password" 
                               placeholder="••••••••" 
                               {...field} 
-                              onChange={e => field.onChange(e.target.value)}
-                              value={field.value || ''}
                             />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={registerForm.control}
                       name="terms"
@@ -267,7 +263,7 @@ const AuthPage = () => {
                         </FormItem>
                       )}
                     />
-                    
+
                     <Button 
                       type="submit" 
                       className="w-full" 
@@ -284,7 +280,7 @@ const AuthPage = () => {
                 </Form>
               )}
             </CardContent>
-            
+
             <CardFooter className="flex justify-center">
               <Button 
                 variant="link" 
@@ -297,7 +293,7 @@ const AuthPage = () => {
             </CardFooter>
           </Card>
         </div>
-        
+
         {/* Right column - Hero section */}
         <div className="hidden md:flex flex-1 bg-primary items-center justify-center p-12 relative">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-700 opacity-90" />
