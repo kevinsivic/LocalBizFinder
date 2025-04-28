@@ -13,7 +13,7 @@ services:
         condition: service_healthy
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/localspot
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/localspot
       - SESSION_SECRET=localspotsecretkey
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
