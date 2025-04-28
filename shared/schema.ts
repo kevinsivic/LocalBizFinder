@@ -1,4 +1,5 @@
-import { pgTable, text, serial, integer, boolean, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, doublePrecision, foreignKey } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -30,15 +31,6 @@ export const categories = [
   "Other"
 ] as const;
 
-export const businessHours = pgTable("business_hours", {
-  id: serial("id").primaryKey(),
-  businessId: integer("business_id").notNull(),
-  dayOfWeek: integer("day_of_week").notNull(), // 0 = Sunday, 6 = Saturday
-  openTime: text("open_time"),
-  closeTime: text("close_time"),
-  isClosed: boolean("is_closed").default(false).notNull(),
-});
-
 export const businesses = pgTable("businesses", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -50,7 +42,16 @@ export const businesses = pgTable("businesses", {
   latitude: doublePrecision("latitude").notNull(),
   longitude: doublePrecision("longitude").notNull(),
   imageUrl: text("image_url"),
-  createdBy: integer("created_by").notNull(),
+  createdBy: integer("created_by").notNull().references(() => users.id, { onDelete: 'cascade' }),
+});
+
+export const businessHours = pgTable("business_hours", {
+  id: serial("id").primaryKey(),
+  businessId: integer("business_id").notNull().references(() => businesses.id, { onDelete: 'cascade' }),
+  dayOfWeek: integer("day_of_week").notNull(), // 0 = Sunday, 6 = Saturday
+  openTime: text("open_time"),
+  closeTime: text("close_time"),
+  isClosed: boolean("is_closed").default(false).notNull(),
 });
 
 export const insertBusinessSchema = createInsertSchema(businesses).omit({
@@ -60,6 +61,26 @@ export const insertBusinessSchema = createInsertSchema(businesses).omit({
 export const businessHoursSchema = createInsertSchema(businessHours).omit({
   id: true,
 });
+
+// Define relations after all tables are defined to avoid circular references
+export const usersRelations = relations(users, ({ many }) => ({
+  businesses: many(businesses),
+}));
+
+export const businessesRelations = relations(businesses, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [businesses.createdBy],
+    references: [users.id],
+  }),
+  hours: many(businessHours),
+}));
+
+export const businessHoursRelations = relations(businessHours, ({ one }) => ({
+  business: one(businesses, {
+    fields: [businessHours.businessId],
+    references: [businesses.id],
+  }),
+}));
 
 export type InsertBusiness = z.infer<typeof insertBusinessSchema>;
 export type Business = typeof businesses.$inferSelect;

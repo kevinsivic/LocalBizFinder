@@ -34,7 +34,7 @@ const HomePage = () => {
   // Get all businesses from the API
   const { data: businesses = [], isLoading } = useQuery<Business[]>({
     queryKey: ["/api/businesses", mapBounds],
-    queryFn: async ({ queryKey }) => {
+    queryFn: async ({ queryKey }: { queryKey: [string, [number, number, number, number] | null] }) => {
       const [_, bounds] = queryKey;
       let url = "/api/businesses";
       if (bounds) {
