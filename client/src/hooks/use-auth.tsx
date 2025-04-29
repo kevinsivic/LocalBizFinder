@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useEffect } from "react";
 import {
   useQuery,
   useMutation,
@@ -7,6 +7,7 @@ import {
 import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { trackEvent, identifyUser, resetIdentity, AnalyticsEvent } from "@/lib/analytics";
 
 type AuthContextType = {
   user: SelectUser | null;
@@ -31,6 +32,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
+  // Identify user in analytics when user data changes
+  useEffect(() => {
+    if (user) {
+      // Identify the user in analytics
+      identifyUser(user.id);
+    }
+  }, [user]);
+
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/login", credentials);
@@ -38,12 +47,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Track login event
+      trackEvent(AnalyticsEvent.USER_LOGIN, { username: user.username });
+      
       toast({
         title: "Login successful",
         description: `Welcome back, ${user.username}!`,
       });
     },
     onError: (error: Error) => {
+      // Track failed login attempt
+      trackEvent(AnalyticsEvent.USER_LOGIN, { status: 'failed' });
+      
       toast({
         title: "Login failed",
         description: error.message || "Invalid username or password",
@@ -59,12 +75,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Track registration event
+      trackEvent(AnalyticsEvent.USER_REGISTER, { username: user.username });
+      
       toast({
         title: "Registration successful",
         description: `Welcome, ${user.username}!`,
       });
     },
     onError: (error: Error) => {
+      // Track failed registration attempt
+      trackEvent(AnalyticsEvent.USER_REGISTER, { status: 'failed' });
+      
       toast({
         title: "Registration failed",
         description: error.message || "Username may already be taken",
@@ -79,6 +102,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
+      
+      // Track logout event and reset user identity
+      trackEvent(AnalyticsEvent.USER_LOGOUT);
+      resetIdentity();
+      
       toast({
         title: "Logged out",
         description: "You have been logged out successfully",

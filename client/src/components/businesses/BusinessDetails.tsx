@@ -12,6 +12,7 @@ import IssueList from "../issues/IssueList";
 import { RatingForm } from "../ratings/RatingForm";
 import { RatingsList } from "../ratings/RatingsList";
 import { RatingDisplay } from "../ui/star-rating";
+import { trackEvent, AnalyticsEvent } from "@/lib/analytics";
 
 import {
   Sheet,
@@ -435,6 +436,18 @@ const BusinessDetails = ({ business, isOpen, onClose }: BusinessDetailsProps) =>
   const [isRatingsVisible, setIsRatingsVisible] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   
+  // Track when business details are viewed
+  useEffect(() => {
+    if (business && isOpen) {
+      // Track business view event with business metadata
+      trackEvent(AnalyticsEvent.BUSINESS_VIEW, { 
+        businessId: business.id.toString(),
+        businessName: business.name,
+        category: business.category
+      });
+    }
+  }, [business, isOpen]);
+  
   // Fetch average rating
   const { data: ratingData } = useQuery<{ averageRating: number }>({
     queryKey: [`/api/businesses/${business?.id}/average-rating`],
@@ -470,6 +483,13 @@ const BusinessDetails = ({ business, isOpen, onClose }: BusinessDetailsProps) =>
   const handleGetDirections = () => {
     const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(business.address)}`;
     window.open(mapsUrl, "_blank", "noopener,noreferrer");
+    
+    // Track directions event
+    trackEvent(AnalyticsEvent.GET_DIRECTIONS, { 
+      businessId: business.id.toString(),
+      businessName: business.name
+    });
+    
     toast({
       title: "Opening Directions",
       description: "Opening Google Maps with directions to " + business.name,
@@ -482,6 +502,12 @@ const BusinessDetails = ({ business, isOpen, onClose }: BusinessDetailsProps) =>
     const shareableUrl = `${window.location.origin}?business=${business.id}`;
     setShareUrl(shareableUrl);
     setIsShareDialogOpen(true);
+    
+    // Track share event
+    trackEvent(AnalyticsEvent.SHARE_BUSINESS, { 
+      businessId: business.id.toString(),
+      businessName: business.name
+    });
   };
 
   // Function to copy share URL to clipboard
@@ -712,6 +738,12 @@ const BusinessDetails = ({ business, isOpen, onClose }: BusinessDetailsProps) =>
                   Share
                 </Button>
                 <Button variant="outline" className="items-center" onClick={() => {
+                  // Track save to favorites event
+                  trackEvent(AnalyticsEvent.SAVE_FAVORITE, { 
+                    businessId: business.id.toString(),
+                    businessName: business.name
+                  });
+                  
                   toast({
                     title: "Saved",
                     description: `${business.name} saved to your favorites.`,
