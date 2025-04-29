@@ -25,7 +25,7 @@ interface RatingFormProps {
   onRatingSubmitted?: () => void;
 }
 
-export function RatingForm({ businessId, businessName, onRatingSubmitted }: RatingFormProps) {
+export function RatingForm({ businessId, businessName, onRatingSubmitted }: RatingFormProps): JSX.Element {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -33,11 +33,21 @@ export function RatingForm({ businessId, businessName, onRatingSubmitted }: Rati
   const [comment, setComment] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
+  // Define type for the rating data
+  interface UserRating {
+    id: number;
+    rating: number;
+    comment: string | null;
+    userId: number;
+    businessId: number;
+    createdAt: string;
+  }
+
   // Fetch the user's existing rating if any
   const {
     data: existingRating,
     isLoading,
-  } = useQuery({
+  } = useQuery<UserRating>({
     queryKey: [`/api/businesses/${businessId}/my-rating`],
     enabled: !!user,
   });
@@ -79,7 +89,7 @@ export function RatingForm({ businessId, businessName, onRatingSubmitted }: Rati
   });
 
   // Delete rating mutation
-  const deleteMutation = useMutation({
+  const deleteMutation = useMutation<void, Error, void>({
     mutationFn: async () => {
       if (!existingRating) return;
       await apiRequest("DELETE", `/api/businesses/${businessId}/ratings/${existingRating.id}`);
@@ -173,36 +183,38 @@ export function RatingForm({ businessId, businessName, onRatingSubmitted }: Rati
         
         <div className="flex justify-between">
           {existingRating && (
-            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-              <AlertDialogTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={deleteMutation.isPending}
-                >
-                  {deleteMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Deleting...
-                    </>
-                  ) : (
-                    "Delete Rating"
-                  )}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Rating</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete your rating for {businessName}? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={deleteMutation.isPending}
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                {deleteMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete Rating"
+                )}
+              </Button>
+              
+              <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Rating</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete your rating for {businessName}? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           )}
           
           <Button

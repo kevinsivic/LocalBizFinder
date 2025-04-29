@@ -75,18 +75,23 @@ export function StarRating({
 export function RatingDisplay({ 
   rating = 0, 
   showEmpty = true,
-  className
+  className,
+  onClick
 }: { 
   rating: number, 
   showEmpty?: boolean,
-  className?: string
+  className?: string,
+  onClick?: () => void
 }) {
   if (rating === 0 && !showEmpty) {
     return null;
   }
 
   return (
-    <div className={cn("flex items-center", className)}>
+    <div 
+      className={cn("flex items-center", className, onClick && "cursor-pointer")} 
+      onClick={onClick}
+    >
       <StarRating rating={rating} size="sm" />
       <span className="text-sm ml-1 text-muted-foreground">
         {rating > 0 ? rating.toFixed(1) : "No ratings"}
