@@ -221,21 +221,46 @@ export class DatabaseStorage implements IStorage {
   
   // Rating methods
   async createRating(rating: InsertRating): Promise<Rating> {
-    // Check if user already rated this business
-    const existing = await this.getUserRatingForBusiness(rating.userId, rating.businessId);
-    
-    if (existing) {
-      // If a rating already exists, update it
-      return this.updateRating(existing.id, rating);
-    }
-    
-    // Create new rating
-    const [newRating] = await db
-      .insert(ratings)
-      .values(rating)
-      .returning();
+    try {
+      console.log("createRating called with:", rating);
       
-    return newRating;
+      // Check if user already rated this business
+      console.log("Checking if user already rated this business");
+      const existing = await this.getUserRatingForBusiness(rating.userId, rating.businessId);
+      
+      console.log("Existing rating:", existing);
+      
+      if (existing) {
+        // If a rating already exists, update it
+        console.log("Updating existing rating with ID:", existing.id);
+        return this.updateRating(existing.id, rating);
+      }
+      
+      // Create new rating
+      console.log("Creating new rating with data:", rating);
+      const insertResult = await db
+        .insert(ratings)
+        .values(rating)
+        .returning();
+        
+      console.log("Insert result:", insertResult);
+      
+      if (!insertResult || insertResult.length === 0) {
+        throw new Error("Failed to insert rating - no rows returned");
+      }
+      
+      const [newRating] = insertResult;
+      console.log("New rating created:", newRating);
+        
+      return newRating;
+    } catch (error: any) {
+      console.error("Error in createRating:", error);
+      // Log the SQL query if available
+      if (error.query) {
+        console.error("SQL Query:", error.query);
+      }
+      throw new Error(`Failed to create rating: ${error.message}`);
+    }
   }
   
   async getRatingById(id: number): Promise<Rating | undefined> {
@@ -254,7 +279,7 @@ export class DatabaseStorage implements IStorage {
         .from(ratings)
         .where(eq(ratings.businessId, businessId))
         .orderBy(desc(ratings.createdAt));
-    } catch (error) {
+    } catch (error: any) {
       console.error('SQL Error in getRatingsByBusiness:', error);
       throw new Error(`Failed to fetch ratings: ${error.message}`);
     }
@@ -281,7 +306,7 @@ export class DatabaseStorage implements IStorage {
         );
       
       return rating;
-    } catch (error) {
+    } catch (error: any) {
       console.error('SQL Error in getUserRatingForBusiness:', error);
       throw new Error(`Failed to fetch your rating: ${error.message}`);
     }
@@ -307,23 +332,41 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateRating(id: number, ratingData: Partial<InsertRating>): Promise<Rating> {
-    // Set updated timestamp
-    const dataToUpdate = {
-      ...ratingData,
-      updatedAt: new Date()
-    };
-    
-    const [updatedRating] = await db
-      .update(ratings)
-      .set(dataToUpdate)
-      .where(eq(ratings.id, id))
-      .returning();
+    try {
+      console.log("Updating rating with ID:", id, "Data:", ratingData);
       
-    if (!updatedRating) {
-      throw new Error(`Rating with id ${id} not found`);
+      // Set updated timestamp
+      const dataToUpdate = {
+        ...ratingData,
+        updatedAt: new Date()
+      };
+      
+      console.log("Data to update:", dataToUpdate);
+      
+      const updateResult = await db
+        .update(ratings)
+        .set(dataToUpdate)
+        .where(eq(ratings.id, id))
+        .returning();
+      
+      console.log("Update result:", updateResult);
+        
+      if (!updateResult || updateResult.length === 0) {
+        throw new Error(`Rating with id ${id} not found`);
+      }
+      
+      const [updatedRating] = updateResult;
+      console.log("Rating updated successfully:", updatedRating);
+      
+      return updatedRating;
+    } catch (error: any) {
+      console.error("Error in updateRating:", error);
+      // Log the SQL query if available
+      if (error.query) {
+        console.error("SQL Query:", error.query);
+      }
+      throw new Error(`Failed to update rating: ${error.message}`);
     }
-    
-    return updatedRating;
   }
   
   async deleteRating(id: number): Promise<void> {

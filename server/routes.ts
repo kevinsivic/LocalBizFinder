@@ -370,6 +370,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
+      console.log("Received rating submission. User ID:", req.user!.id, "Business ID:", businessId);
+      console.log("Request body:", req.body);
+
       const business = await storage.getBusinessById(businessId);
       if (!business) {
         return res.status(404).json({ message: "Business not found" });
@@ -377,21 +380,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate rating data
       try {
-        const ratingData = ratingSchema.parse({
+        const ratingInput = {
           businessId,
           userId: req.user!.id,
           rating: req.body.rating,
           comment: req.body.comment || null
-        });
+        };
+
+        console.log("Rating input before Zod validation:", ratingInput);
+        const ratingData = ratingSchema.parse(ratingInput);
+        console.log("Rating data after Zod validation:", ratingData);
 
         // Make sure rating is between 1 and 5
         if (ratingData.rating < 1 || ratingData.rating > 5) {
           return res.status(400).json({ message: "Rating must be between 1 and 5" });
         }
 
+        // Log to track the request flow
+        console.log("About to call storage.createRating with:", ratingData);
         const savedRating = await storage.createRating(ratingData);
+        console.log("Rating saved successfully:", savedRating);
+        
         res.status(201).json(savedRating);
       } catch (error) {
+        console.error("Validation or saving error:", error);
         if (error instanceof ZodError) {
           return res.status(400).json({ message: "Invalid rating data", errors: error.errors });
         }
@@ -399,7 +411,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Error saving rating:", error);
-      res.status(500).json({ message: "Failed to save rating" });
+      if (error instanceof Error) {
+        res.status(500).json({ message: `Failed to save rating: ${error.message}` });
+      } else {
+        res.status(500).json({ message: "Failed to save rating" });
+      }
     }
   });
   
