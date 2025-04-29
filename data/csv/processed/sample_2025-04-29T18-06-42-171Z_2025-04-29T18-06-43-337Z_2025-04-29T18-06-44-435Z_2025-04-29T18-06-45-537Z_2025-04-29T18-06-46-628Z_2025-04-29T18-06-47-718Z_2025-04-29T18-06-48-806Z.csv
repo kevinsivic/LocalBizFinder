@@ -1,0 +1,4 @@
+name,description,category,address,phone,website,latitude,longitude,imageUrl
+Community Coffee Shop,A cozy local coffee shop with ethically sourced beans,coffee,123 Main St,555-123-4567,https://communitycoffee.example.com,43.01,-78.63,https://example.com/images/coffee.jpg
+Green Grocery,Locally grown produce and specialty foods,groceries,456 Oak Ave,555-987-6543,https://greengrocery.example.com,43.02,-78.64,https://example.com/images/grocery.jpg
+Handmade Crafts,Artisan crafts and gifts from local makers,retail,789 Elm St,555-567-8901,https://handmadecrafts.example.com,43.03,-78.65,https://example.com/images/crafts.jpg
