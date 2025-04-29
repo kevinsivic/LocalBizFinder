@@ -21,6 +21,7 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+      - ./import:/app/data/csv
     restart: unless-stopped
 
   postgres:

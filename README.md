@@ -10,6 +10,7 @@ A platform for discovering locally owned retailers and restaurants with interact
 - Admin panel for managing businesses
 - Search and filtering capabilities
 - Add new local businesses to the platform
+- Automatic CSV import for bulk business data
 
 ## Tech Stack
 
@@ -326,6 +327,54 @@ The application uses PostgreSQL for data storage. When running with Docker, the 
 ### Admin Access
 
 To access the admin panel, you need to create a user with admin privileges. Register a new user through the application and then manually update their `isAdmin` flag in the database to `true`.
+
+### CSV Import Functionality
+
+The application includes an automatic CSV watcher that monitors a specific directory for CSV files containing business data. When CSV files are placed in this directory, they are automatically processed, and businesses are added to the database.
+
+#### CSV File Format
+
+CSV files must include the following headers with corresponding data:
+
+```
+name,description,category,address,phone,website,latitude,longitude,imageUrl
+```
+
+Example:
+```
+name,description,category,address,phone,website,latitude,longitude,imageUrl
+Local Bookstore,Independent bookstore with a wide selection of books,retail,123 Market St,555-555-1234,https://localbookstore.example.com,43.04,-78.66,https://example.com/images/bookstore.jpg
+Craft Brewery,Local brewery offering craft beers,bar,456 Brewery Ave,555-555-5678,https://craftbrewery.example.com,43.05,-78.67,https://example.com/images/brewery.jpg
+```
+
+#### Directory Structure
+
+- Place CSV files in the `data/csv` directory.
+- Processed files are moved to `data/csv/processed` with a timestamp.
+- Files with errors are moved to `data/csv/error` with a timestamp.
+
+#### Using with Docker
+
+To use the CSV import feature with Docker, mount a volume to the `/app/data/csv` directory in your container. This allows you to place CSV files in a directory on your host machine for automatic processing.
+
+In docker-compose.yml:
+```yaml
+volumes:
+  - ./import:/app/data/csv
+```
+
+Then, place your CSV files in the `./import` directory on your host machine.
+
+#### Processing Logic
+
+The CSV watcher:
+1. Monitors the `data/csv` directory for new CSV files.
+2. Parses each file and validates the data format.
+3. Checks for duplicate businesses (by name and address) to avoid duplicates.
+4. Inserts valid businesses into the database.
+5. Moves processed files to the `processed` directory.
+6. Moves files with errors to the `error` directory.
+7. Provides detailed logs during processing.
 
 ## License
 
