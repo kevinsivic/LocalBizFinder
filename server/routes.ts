@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { categories, insertBusinessSchema, issueTypes, type IssueReport } from "@shared/schema";
+import { categories, insertBusinessSchema, issueTypes, type IssueReport, ratingSchema } from "@shared/schema";
 import { ZodError } from "zod";
 
 // Authorization middleware
@@ -294,6 +294,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating issue report:", error);
       res.status(500).send("Failed to update issue report");
+    }
+  });
+
+  // --------- Rating APIs ---------
+  
+  // Get ratings for a business
+  app.get("/api/businesses/:id/ratings", async (req, res) => {
+    const businessId = parseInt(req.params.id);
+    if (isNaN(businessId)) {
+      return res.status(400).json({ message: "Invalid business ID" });
+    }
+
+    try {
+      const business = await storage.getBusinessById(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+
+      const ratings = await storage.getRatingsByBusiness(businessId);
+      res.json(ratings);
+    } catch (error) {
+      console.error("Error fetching business ratings:", error);
+      res.status(500).json({ message: "Failed to fetch business ratings" });
+    }
+  });
+  
+  // Get average rating for a business
+  app.get("/api/businesses/:id/average-rating", async (req, res) => {
+    const businessId = parseInt(req.params.id);
+    if (isNaN(businessId)) {
+      return res.status(400).json({ message: "Invalid business ID" });
+    }
+
+    try {
+      const business = await storage.getBusinessById(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+
+      const averageRating = await storage.getAverageRatingForBusiness(businessId);
+      res.json({ averageRating });
+    } catch (error) {
+      console.error("Error fetching average rating:", error);
+      res.status(500).json({ message: "Failed to fetch average rating" });
+    }
+  });
+  
+  // Get user's rating for a business
+  app.get("/api/businesses/:id/my-rating", requireAuth, async (req, res) => {
+    const businessId = parseInt(req.params.id);
+    if (isNaN(businessId)) {
+      return res.status(400).json({ message: "Invalid business ID" });
+    }
+
+    try {
+      const business = await storage.getBusinessById(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+
+      const rating = await storage.getUserRatingForBusiness(req.user!.id, businessId);
+      res.json(rating || null);
+    } catch (error) {
+      console.error("Error fetching user rating:", error);
+      res.status(500).json({ message: "Failed to fetch your rating" });
+    }
+  });
+  
+  // Add or update a rating
+  app.post("/api/businesses/:id/ratings", requireAuth, async (req, res) => {
+    const businessId = parseInt(req.params.id);
+    if (isNaN(businessId)) {
+      return res.status(400).json({ message: "Invalid business ID" });
+    }
+
+    try {
+      const business = await storage.getBusinessById(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+
+      // Validate rating data
+      try {
+        const ratingData = ratingSchema.parse({
+          businessId,
+          userId: req.user!.id,
+          rating: req.body.rating,
+          comment: req.body.comment || null
+        });
+
+        // Make sure rating is between 1 and 5
+        if (ratingData.rating < 1 || ratingData.rating > 5) {
+          return res.status(400).json({ message: "Rating must be between 1 and 5" });
+        }
+
+        const savedRating = await storage.createRating(ratingData);
+        res.status(201).json(savedRating);
+      } catch (error) {
+        if (error instanceof ZodError) {
+          return res.status(400).json({ message: "Invalid rating data", errors: error.errors });
+        }
+        throw error;
+      }
+    } catch (error) {
+      console.error("Error saving rating:", error);
+      res.status(500).json({ message: "Failed to save rating" });
+    }
+  });
+  
+  // Delete a rating
+  app.delete("/api/businesses/:businessId/ratings/:id", requireAuth, async (req, res) => {
+    const businessId = parseInt(req.params.businessId);
+    const ratingId = parseInt(req.params.id);
+    
+    if (isNaN(businessId) || isNaN(ratingId)) {
+      return res.status(400).json({ message: "Invalid business or rating ID" });
+    }
+
+    try {
+      const rating = await storage.getRatingById(ratingId);
+      if (!rating) {
+        return res.status(404).json({ message: "Rating not found" });
+      }
+
+      // Check if rating belongs to the user
+      if (rating.userId !== req.user!.id && !req.user!.isAdmin) {
+        return res.status(403).json({ message: "You don't have permission to delete this rating" });
+      }
+
+      await storage.deleteRating(ratingId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting rating:", error);
+      res.status(500).json({ message: "Failed to delete rating" });
     }
   });
 
