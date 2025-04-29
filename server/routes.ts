@@ -60,13 +60,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new business (authenticated users)
   app.post("/api/businesses", requireAuth, async (req, res) => {
     try {
-      const businessData = insertBusinessSchema.parse(req.body);
-      const business = await storage.createBusiness({
-        ...businessData,
+      // Add additional business validation if needed
+      console.log("Received business data:", req.body);
+      
+      // Sanitize input
+      const businessInput: Record<string, any> = {
+        name: req.body.name,
+        description: req.body.description,
+        category: req.body.category,
+        address: req.body.address,
+        latitude: parseFloat(req.body.latitude),
+        longitude: parseFloat(req.body.longitude),
         createdBy: req.user!.id, // User is guaranteed to exist due to requireAuth middleware
-      });
+      };
+      
+      // Add optional fields if present
+      if (req.body.phone) businessInput.phone = req.body.phone;
+      if (req.body.website) businessInput.website = req.body.website;
+      if (req.body.imageUrl) businessInput.imageUrl = req.body.imageUrl;
+      
+      // Validate with Zod
+      const businessData = insertBusinessSchema.parse(businessInput);
+      const business = await storage.createBusiness(businessData);
+      
       res.status(201).json(business);
     } catch (error) {
+      console.error("Error creating business:", error);
       if (error instanceof ZodError) {
         return res.status(400).json({ message: "Invalid business data", errors: error.errors });
       }
@@ -92,10 +111,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const businessData = insertBusinessSchema.parse(req.body);
+      console.log("Updating business data:", req.body);
+      
+      // Sanitize input
+      const businessInput: Record<string, any> = {
+        name: req.body.name,
+        description: req.body.description,
+        category: req.body.category,
+        address: req.body.address,
+        latitude: parseFloat(req.body.latitude),
+        longitude: parseFloat(req.body.longitude),
+        createdBy: business.createdBy, // Preserve original creator
+      };
+      
+      // Add optional fields if present
+      if (req.body.phone) businessInput.phone = req.body.phone;
+      if (req.body.website) businessInput.website = req.body.website;
+      if (req.body.imageUrl) businessInput.imageUrl = req.body.imageUrl;
+      
+      // Validate with Zod
+      const businessData = insertBusinessSchema.parse(businessInput);
       const updatedBusiness = await storage.updateBusiness(id, businessData);
+      
       res.json(updatedBusiness);
     } catch (error) {
+      console.error("Error updating business:", error);
       if (error instanceof ZodError) {
         return res.status(400).json({ message: "Invalid business data", errors: error.errors });
       }

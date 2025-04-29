@@ -40,12 +40,12 @@ const extendedBusinessSchema = insertBusinessSchema.extend({
   name: z.string().min(3, "Business name must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   address: z.string().min(5, "Address must be at least 5 characters"),
-  phone: z.string().optional().nullable(),
-  website: z.string().url("Please enter a valid URL").or(z.string().length(0)).optional().nullable(),
+  phone: z.string().optional(),
+  website: z.string().url("Please enter a valid URL").or(z.string().length(0)).optional(),
   // Manually setting lat/lng for demo - in production would use geocoding
   latitude: z.number().or(z.string().transform(val => parseFloat(val))),
   longitude: z.number().or(z.string().transform(val => parseFloat(val))),
-  imageUrl: z.string().optional().nullable(),
+  imageUrl: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof extendedBusinessSchema>;
@@ -105,12 +105,16 @@ const BusinessForm = ({ isOpen, onClose }: BusinessFormProps) => {
         ...data,
         latitude: typeof data.latitude === 'string' ? parseFloat(data.latitude) : data.latitude,
         longitude: typeof data.longitude === 'string' ? parseFloat(data.longitude) : data.longitude,
-        // Handle empty strings for optional fields
-        phone: data.phone === "" ? null : data.phone,
-        website: data.website === "" ? null : data.website,
-        imageUrl: data.imageUrl === "" ? null : data.imageUrl
       };
-      createBusinessMutation.mutate(formattedData);
+      
+      // Handle optional fields: remove empty strings instead of setting to null
+      const finalData = Object.fromEntries(
+        Object.entries(formattedData).filter(([_, value]) => 
+          value !== "" && value !== null && value !== undefined
+        )
+      );
+      
+      createBusinessMutation.mutate(finalData as FormValues);
     }
   };
 
@@ -224,7 +228,14 @@ const BusinessForm = ({ isOpen, onClose }: BusinessFormProps) => {
                       <FormItem>
                         <FormLabel>Phone Number</FormLabel>
                         <FormControl>
-                          <Input placeholder="(555) 123-4567" {...field} />
+                          <Input 
+                            placeholder="(555) 123-4567" 
+                            value={field.value || ""} 
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                            ref={field.ref}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -238,7 +249,14 @@ const BusinessForm = ({ isOpen, onClose }: BusinessFormProps) => {
                       <FormItem>
                         <FormLabel>Website</FormLabel>
                         <FormControl>
-                          <Input placeholder="https://example.com" {...field} />
+                          <Input 
+                            placeholder="https://example.com" 
+                            value={field.value || ""} 
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                            ref={field.ref}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -253,7 +271,14 @@ const BusinessForm = ({ isOpen, onClose }: BusinessFormProps) => {
                     <FormItem>
                       <FormLabel>Image URL</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://example.com/image.jpg" {...field} />
+                        <Input 
+                          placeholder="https://example.com/image.jpg" 
+                          value={field.value || ""} 
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
                       </FormControl>
                       <FormDescription>
                         Provide a URL to an image of the business
