@@ -171,14 +171,14 @@ export default function IssuesPage() {
           </div>
           <div className="w-full md:w-1/4">
             <Select 
-              value={filterStatus || ""} 
-              onValueChange={(value) => setFilterStatus(value || null)}
+              value={filterStatus || "all"} 
+              onValueChange={(value) => setFilterStatus(value === "all" ? null : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
                 <SelectItem value="resolved">Resolved</SelectItem>
