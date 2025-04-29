@@ -5,7 +5,7 @@ import csvParser from 'csv-parser';
 import { db } from './db';
 import { businesses, insertBusinessSchema } from '@shared/schema';
 import { log } from './vite';
-import { geocodeAddressWithRetry } from '@shared/geocoding';
+import { geocodeAddressWithRetry, geocodeAddressWithFallback } from '@shared/geocoding';
 
 // Directory to watch for CSV files
 const CSV_DIRECTORY = path.resolve('./data/csv');
@@ -140,21 +140,34 @@ async function processCSVFile(filePath: string): Promise<void> {
               else if (row.address) {
                 log(`Geocoding address for ${row.name}: ${row.address}`, 'csv-watcher');
                 try {
-                  // Add a delay between geocoding requests to respect rate limits
-                  const coordinates = await geocodeAddressWithRetry(row.address, 3, 1000);
-                  if (coordinates) {
-                    latitude = coordinates.lat;
-                    longitude = coordinates.lon;
-                    log(`Successfully geocoded address for ${row.name}: ${latitude}, ${longitude}`, 'csv-watcher');
+                  // Try with retry first
+                  let coordinates = await geocodeAddressWithRetry(row.address, 3, 1000);
+                  
+                  // If retry fails, use the fallback method which will never return null
+                  if (!coordinates) {
+                    log(`Using fallback geocoding for ${row.name}`, 'csv-watcher');
+                    coordinates = await geocodeAddressWithFallback(row.address);
+                    log(`Using fallback coordinates for ${row.name}: ${coordinates.lat}, ${coordinates.lon}`, 'csv-watcher');
                   } else {
-                    throw new Error('Geocoding failed');
+                    log(`Successfully geocoded address for ${row.name}: ${coordinates.lat}, ${coordinates.lon}`, 'csv-watcher');
                   }
+                  
+                  latitude = coordinates.lat;
+                  longitude = coordinates.lon;
                 } catch (error) {
-                  log(`Failed to geocode address for ${row.name}: ${error}`, 'csv-watcher');
-                  throw new Error(`Geocoding failed for address: ${row.address}`);
+                  // This should never happen with the fallback, but just in case
+                  log(`Critical geocoding error for ${row.name}: ${error}`, 'csv-watcher');
+                  // Use Portland, OR as default coordinates in case of critical error
+                  latitude = 45.5202;
+                  longitude = -122.6742;
+                  log(`Using emergency fallback coordinates for ${row.name}`, 'csv-watcher');
                 }
               } else {
-                throw new Error('Missing both coordinates and address');
+                log(`Missing both coordinates and address for ${row.name}`, 'csv-watcher');
+                // Use Portland, OR as default coordinates when both are missing
+                latitude = 45.5202;
+                longitude = -122.6742;
+                log(`Using default coordinates for ${row.name} due to missing data`, 'csv-watcher');
               }
               
               // Convert string values to correct types
