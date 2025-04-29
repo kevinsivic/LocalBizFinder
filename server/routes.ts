@@ -135,25 +135,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Business input before validation:", businessInput);
       
       // Validate with Zod
-      try {
-        const businessData = insertBusinessSchema.parse(businessInput);
-        console.log("Validated business data:", businessData);
-        const updatedBusiness = await storage.updateBusiness(id, businessData);
-        console.log("Updated business result:", updatedBusiness);
-        return res.json(updatedBusiness);
-      } catch (validationError) {
-        console.error("Validation error:", validationError);
-        return res.status(400).json({ 
-          message: "Invalid business data", 
-          errors: validationError instanceof ZodError ? validationError.errors : "Unknown validation error" 
-        });
-      }
+      const businessData = insertBusinessSchema.parse(businessInput);
+      console.log("Validated business data:", businessData);
+      
+      const updatedBusiness = await storage.updateBusiness(id, businessData);
+      console.log("Updated business result:", updatedBusiness);
+      return res.json(updatedBusiness);
     } catch (error) {
       console.error("Error updating business:", error);
       if (error instanceof ZodError) {
         return res.status(400).json({ message: "Invalid business data", errors: error.errors });
       }
-      res.status(500).json({ message: "Error updating business" });
+      return res.status(500).json({ message: "Error updating business" });
     }
   });
 
