@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 
 import {
   Form,
@@ -50,10 +51,37 @@ const extendedBusinessSchema = insertBusinessSchema.extend({
 
 type FormValues = z.infer<typeof extendedBusinessSchema>;
 
+// Geocoding function to convert address to lat/lng
+async function geocodeAddress(address: string): Promise<{ lat: number, lon: number } | null> {
+  try {
+    const encodedAddress = encodeURIComponent(address);
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`);
+    
+    if (!response.ok) {
+      throw new Error(`Geocoding failed with status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.length === 0) {
+      return null;
+    }
+    
+    return {
+      lat: parseFloat(data[0].lat),
+      lon: parseFloat(data[0].lon)
+    };
+  } catch (error) {
+    console.error("Geocoding error:", error);
+    return null;
+  }
+}
+
 const BusinessForm = ({ isOpen, onClose }: BusinessFormProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
+  const [isGeocoding, setIsGeocoding] = useState(false);
 
   const defaultValues: Partial<FormValues> = {
     name: "",
@@ -299,44 +327,71 @@ const BusinessForm = ({ isOpen, onClose }: BusinessFormProps) => {
                   )}
                 />
 
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="latitude"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Latitude <span className="text-red-500">*</span></FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            step="0.0001" 
-                            {...field} 
-                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium">Location Coordinates</h3>
+                    <div className="text-xs text-muted-foreground">
+                      Automatically determined from address
+                    </div>
+                  </div>
+                  
+                  <div className="bg-muted p-3 rounded-md mb-2">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Latitude:</span>{" "}
+                        <span className="font-medium">{form.getValues().latitude}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Longitude:</span>{" "}
+                        <span className="font-medium">{form.getValues().longitude}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <details className="text-sm">
+                    <summary className="cursor-pointer text-primary hover:text-primary/90 font-medium">
+                      Need to adjust coordinates?
+                    </summary>
+                    <div className="mt-3 grid grid-cols-1 gap-6 sm:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="latitude"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Latitude <span className="text-red-500">*</span></FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                step="0.0001" 
+                                {...field} 
+                                onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  <FormField
-                    control={form.control}
-                    name="longitude"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Longitude <span className="text-red-500">*</span></FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            step="0.0001" 
-                            {...field} 
-                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      <FormField
+                        control={form.control}
+                        name="longitude"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Longitude <span className="text-red-500">*</span></FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                step="0.0001" 
+                                {...field} 
+                                onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </details>
                 </div>
               </>
             )}
@@ -352,7 +407,8 @@ const BusinessForm = ({ isOpen, onClose }: BusinessFormProps) => {
               {step === 1 ? (
                 <Button 
                   type="button" 
-                  onClick={() => {
+                  disabled={isGeocoding}
+                  onClick={async () => {
                     // Validate only the fields from step 1
                     const currentData = form.getValues();
                     console.log("Current form data:", currentData);
@@ -377,13 +433,51 @@ const BusinessForm = ({ isOpen, onClose }: BusinessFormProps) => {
                       // Trigger form validation
                       form.trigger(["name", "category", "description", "address"]);
                     } else {
-                      // If validation passes, proceed to next step
-                      console.log("Moving to step 2 (button click)");
-                      setStep(2);
+                      // If validation passes, try to geocode the address
+                      setIsGeocoding(true);
+                      
+                      try {
+                        const geocodedLocation = await geocodeAddress(currentData.address);
+                        
+                        if (geocodedLocation) {
+                          console.log("Geocoded coordinates:", geocodedLocation);
+                          form.setValue("latitude", geocodedLocation.lat);
+                          form.setValue("longitude", geocodedLocation.lon);
+                          toast({
+                            title: "Address Geocoded",
+                            description: "Location coordinates have been automatically determined from the address.",
+                          });
+                        } else {
+                          toast({
+                            title: "Geocoding Failed",
+                            description: "Could not determine coordinates from address. Please enter them manually.",
+                            variant: "destructive",
+                          });
+                        }
+                      } catch (error) {
+                        console.error("Error during geocoding:", error);
+                        toast({
+                          title: "Geocoding Error",
+                          description: "An error occurred while determining coordinates. Please enter them manually.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIsGeocoding(false);
+                        // Proceed to next step regardless of geocoding result
+                        console.log("Moving to step 2 (button click)");
+                        setStep(2);
+                      }
                     }
                   }}
                 >
-                  Next
+                  {isGeocoding ? (
+                    <span className="flex items-center">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Getting Location...
+                    </span>
+                  ) : (
+                    "Next"
+                  )}
                 </Button>
               ) : (
                 <Button 
