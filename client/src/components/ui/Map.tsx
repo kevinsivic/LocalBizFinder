@@ -6,6 +6,7 @@ type MapProps = {
   businesses: Business[];
   onBoundsChange?: (bounds: [number, number, number, number]) => void;
   onBusinessSelect?: (business: Business) => void;
+  onUserLocationChange?: (location: [number, number] | null) => void;
   center?: [number, number];
   zoom?: number;
   useGeolocation?: boolean;
@@ -15,6 +16,7 @@ const Map = ({
   businesses, 
   onBoundsChange, 
   onBusinessSelect,
+  onUserLocationChange,
   center = [37.7749, -122.4194], // Default to San Francisco
   zoom = 13,
   useGeolocation = true // Default to using the user's location
@@ -37,20 +39,37 @@ const Map = ({
         (position) => {
           const { latitude, longitude } = position.coords;
           console.log("User location:", latitude, longitude);
-          setUserLocation([latitude, longitude]);
+          const newLocation: [number, number] = [latitude, longitude];
+          setUserLocation(newLocation);
+          
+          // Notify parent component
+          if (onUserLocationChange) {
+            onUserLocationChange(newLocation);
+          }
+          
           setLocationLoading(false);
         },
         (error) => {
           console.error("Geolocation error:", error);
           setLocationLoading(false);
+          
+          // Notify parent component about location failure
+          if (onUserLocationChange) {
+            onUserLocationChange(null);
+          }
         },
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
     } else {
       console.warn("Geolocation is not supported by this browser.");
       setLocationLoading(false);
+      
+      // Notify parent component about lack of geolocation support
+      if (onUserLocationChange) {
+        onUserLocationChange(null);
+      }
     }
-  }, [useGeolocation]);
+  }, [useGeolocation, onUserLocationChange]);
 
   // Initialize map
   useEffect(() => {

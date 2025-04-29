@@ -32,6 +32,8 @@ const HomePage = () => {
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   // Stores the last known map bounds when in map view for use when switching back from list view
   const [lastMapBounds, setLastMapBounds] = useState<[number, number, number, number] | null>(null);
+  // Store the user's location for distance calculations
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   
   // Get all businesses from the API
   const { data: businesses = [], isLoading } = useQuery<Business[]>({
@@ -188,6 +190,7 @@ const HomePage = () => {
                 businesses={filteredBusinesses}
                 onBoundsChange={handleMapBoundsChange}
                 onBusinessSelect={handleBusinessSelect}
+                onUserLocationChange={setUserLocation}
                 useGeolocation={true}
               />
               
@@ -210,6 +213,7 @@ const HomePage = () => {
                 businesses={filteredBusinesses}
                 isLoading={isLoading}
                 onSelectBusiness={handleBusinessSelect}
+                userLocation={userLocation}
               />
             </div>
           </div>
@@ -223,6 +227,7 @@ const HomePage = () => {
                   businesses={filteredBusinesses}
                   onBoundsChange={handleMapBoundsChange}
                   onBusinessSelect={handleBusinessSelect}
+                  onUserLocationChange={setUserLocation}
                   useGeolocation={true}
                 />
                 
@@ -247,6 +252,7 @@ const HomePage = () => {
                   businesses={filteredBusinesses}
                   isLoading={isLoading}
                   onSelectBusiness={handleBusinessSelect}
+                  userLocation={userLocation}
                 />
               </div>
             )}
