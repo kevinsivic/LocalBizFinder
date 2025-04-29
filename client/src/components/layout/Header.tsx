@@ -51,9 +51,13 @@ const Header = () => {
                   Discover
                 </div>
               </Link>
-              <a href="#about" className="border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700 border-b-2 px-1 pt-1 inline-flex items-center text-sm font-medium">
-                About
-              </a>
+              <Link href="/about">
+                <div className={`${
+                  location === "/about" ? "border-primary text-neutral-800" : "border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700"
+                } border-b-2 px-1 pt-1 inline-flex items-center text-sm font-medium`}>
+                  About
+                </div>
+              </Link>
               <a href="#contact" className="border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700 border-b-2 px-1 pt-1 inline-flex items-center text-sm font-medium">
                 Contact
               </a>
@@ -123,9 +127,13 @@ const Header = () => {
                       Discover
                     </div>
                   </Link>
-                  <a href="#about" className="border-transparent text-neutral-500 hover:bg-neutral-50 hover:border-neutral-300 hover:text-neutral-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">
-                    About
-                  </a>
+                  <Link href="/about" onClick={() => setMobileMenuOpen(false)}>
+                    <div className={`${
+                      location === "/about" ? "bg-neutral-50 border-primary text-primary" : "border-transparent text-neutral-500 hover:bg-neutral-50 hover:border-neutral-300 hover:text-neutral-700"
+                    } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}>
+                      About
+                    </div>
+                  </Link>
                   <a href="#contact" className="border-transparent text-neutral-500 hover:bg-neutral-50 hover:border-neutral-300 hover:text-neutral-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">
                     Contact
                   </a>
