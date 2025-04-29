@@ -1,41 +1,53 @@
-version: '3.8'
+  version: '3.8'
+  networks:
+    homeassistant_home_proxy:
+      external: true
+  services:
+    app:
+      build:
+        context: .
+        dockerfile: Dockerfile
+        target: production
+        network: host
+      depends_on:
+        postgres:
+          condition: service_healthy
+      environment:
+        - NODE_ENV=production
+        - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/localspot
+        - SESSION_SECRET=${SESSION_SECRET}
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        - POSTGRES_DB=localspot
+      volumes:
+        - ./import:/app/data/csv
+      restart: unless-stopped
+      networks:
+        - default
+        - homeassistant_home_proxy
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=homeassistant_home_proxy"
+        - "traefik.http.routers.localspot.entrypoints=websecure"
+        - "traefik.http.services.localspot.loadbalancer.server.port=5000"
+        - "traefik.http.routers.localspot.rule=Host(`localspot.jemsoftware.co`)"
+        - "traefik.http.routers.localspot.tls.certresolver=myresolver"
 
-services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
-    ports:
-      - "5000:5000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/localspot
-      - SESSION_SECRET=${SESSION_SECRET}
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=localspot
-    volumes:
-      - ./import:/app/data/csv
-    restart: unless-stopped
 
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=localspot
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    postgres:
+      image: postgres:15-alpine
+      environment:
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        - POSTGRES_DB=localspot
+      volumes:
+        - postgres-data:/var/lib/postgresql/data
+      restart: unless-stopped
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U postgres"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
 
-volumes:
-  postgres-data:
+  volumes:
+    postgres-data:
