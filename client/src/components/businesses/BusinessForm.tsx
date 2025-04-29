@@ -40,12 +40,12 @@ const extendedBusinessSchema = insertBusinessSchema.extend({
   name: z.string().min(3, "Business name must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   address: z.string().min(5, "Address must be at least 5 characters"),
-  phone: z.string().optional(),
-  website: z.string().url("Please enter a valid URL").or(z.string().length(0)).optional(),
+  phone: z.string().optional().nullable(),
+  website: z.string().url("Please enter a valid URL").or(z.string().length(0)).optional().nullable(),
   // Manually setting lat/lng for demo - in production would use geocoding
   latitude: z.number().or(z.string().transform(val => parseFloat(val))),
   longitude: z.number().or(z.string().transform(val => parseFloat(val))),
-  imageUrl: z.string().optional(),
+  imageUrl: z.string().optional().nullable(),
 });
 
 type FormValues = z.infer<typeof extendedBusinessSchema>;
@@ -100,7 +100,17 @@ const BusinessForm = ({ isOpen, onClose }: BusinessFormProps) => {
     if (step === 1) {
       setStep(2);
     } else {
-      createBusinessMutation.mutate(data);
+      // Ensure latitude and longitude are numbers
+      const formattedData = {
+        ...data,
+        latitude: typeof data.latitude === 'string' ? parseFloat(data.latitude) : data.latitude,
+        longitude: typeof data.longitude === 'string' ? parseFloat(data.longitude) : data.longitude,
+        // Handle empty strings for optional fields
+        phone: data.phone === "" ? null : data.phone,
+        website: data.website === "" ? null : data.website,
+        imageUrl: data.imageUrl === "" ? null : data.imageUrl
+      };
+      createBusinessMutation.mutate(formattedData);
     }
   };
 
