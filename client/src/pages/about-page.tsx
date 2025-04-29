@@ -168,14 +168,10 @@ const AboutPage = () => {
               </ul>
             </div>
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Get in Touch</h3>
+              <h3 className="text-lg font-medium">Join Our Community</h3>
               <p className="text-muted-foreground">
-                Have questions or suggestions? We'd love to hear from you.
+                Discover and support local businesses in your area.
               </p>
-              <Button variant="outline" className="gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Contact Us
-              </Button>
             </div>
           </div>
           <div className="border-t mt-8 pt-8 text-center text-muted-foreground">
