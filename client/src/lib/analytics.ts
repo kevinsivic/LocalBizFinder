@@ -40,27 +40,54 @@ export enum AnalyticsEvent {
 }
 
 // Initialize Swetrix with project ID from environment variables
-const projectId = import.meta.env.SWETRIX_PROJECT_ID as string;
+let projectId = import.meta.env.VITE_SWETRIX_PROJECT_ID as string;
 const customServerUrl = 'https://track.jemsoftware.co/';
 
-// Only initialize in production or if project ID exists
-const shouldInitialize = projectId && (import.meta.env.PROD || import.meta.env.DEV);
+// Fetch configuration from the server if needed
+const initializeAnalytics = async () => {
+  try {
+    // If we don't have a project ID from Vite env, try to fetch from server
+    if (!projectId) {
+      console.debug('[Analytics] No project ID in client environment, fetching from server...');
+      const response = await fetch('/api/config');
+      const config = await response.json();
+      projectId = config.SWETRIX_PROJECT_ID;
+      console.debug('[Analytics] Fetched project ID from server:', projectId || '(not set)');
+    }
 
-if (shouldInitialize) {
-  // Initialize with custom server URL
-  Swetrix.init(projectId, {
-    apiURL: customServerUrl
-  });
-  console.debug(`[Analytics] Initialized with custom server: ${customServerUrl}`);
-  Swetrix.trackViews();
-}
+    // Only initialize if project ID exists
+    const shouldInitialize = !!projectId;
+
+    if (shouldInitialize) {
+      // Initialize with custom server URL
+      Swetrix.init(projectId, {
+        apiURL: customServerUrl
+        // Note: debug mode removed as it's not in LibOptions type
+      });
+      console.debug(`[Analytics] Initialized with project ID: ${projectId}, custom server: ${customServerUrl}`);
+      Swetrix.trackViews();
+    } else {
+      console.warn('[Analytics] Skipping initialization - no project ID available');
+    }
+  } catch (error) {
+    console.error('[Analytics] Error initializing:', error);
+  }
+};
+
+// Start initialization
+initializeAnalytics();
+
+// Helper function to check if analytics is initialized
+const isInitialized = () => {
+  return !!projectId;
+};
 
 // Track a custom event
 export const trackEvent = (
   event: AnalyticsEvent, 
   metadata?: Record<string, string>
 ) => {
-  if (!shouldInitialize) return;
+  if (!isInitialized()) return;
   
   try {
     Swetrix.track({ 
@@ -76,7 +103,7 @@ export const trackEvent = (
 
 // Track a page view
 export const trackPageView = (path: string) => {
-  if (!shouldInitialize || !path) return;
+  if (!isInitialized() || !path) return;
   
   try {
     // Use the path for tracking with the custom server
@@ -89,7 +116,7 @@ export const trackPageView = (path: string) => {
 
 // Set custom user ID for better tracking - Track as a custom event with user ID metadata
 export const identifyUser = (userId: number) => {
-  if (!shouldInitialize) return;
+  if (!isInitialized()) return;
   
   try {
     // Track user identity as an event with metadata
@@ -102,7 +129,7 @@ export const identifyUser = (userId: number) => {
 
 // Reset user identity (e.g., on logout)
 export const resetIdentity = () => {
-  if (!shouldInitialize) return;
+  if (!isInitialized()) return;
   
   try {
     // Track user reset as an event
@@ -115,12 +142,7 @@ export const resetIdentity = () => {
 
 // Start page load time tracking
 export const startPageLoadTracking = () => {
-  if (!shouldInitialize) return;
-  
-  try {
-    // Swetrix automatically tracks page views and basic performance when trackViews is called
-    console.debug('[Analytics] Started tracking with Swetrix');
-  } catch (error) {
-    console.error('[Analytics] Error starting tracking:', error);
-  }
+  // This function now just ensures the analytics module is loaded
+  // The actual initialization happens asynchronously
+  console.debug('[Analytics] Analytics module loaded');
 };

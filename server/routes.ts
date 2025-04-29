@@ -451,6 +451,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/health", (req, res) => {
     res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
   });
+  
+  // Environment variables endpoint for client-side configuration
+  app.get("/api/config", (req, res) => {
+    // Only expose whitelisted environment variables
+    res.status(200).json({ 
+      SWETRIX_PROJECT_ID: process.env.SWETRIX_PROJECT_ID || '',
+      NODE_ENV: process.env.NODE_ENV || 'development'
+    });
+  });
 
   const httpServer = createServer(app);
   return httpServer;
