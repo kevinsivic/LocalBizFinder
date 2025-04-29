@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { Business } from "@shared/schema";
+import { Business, categories, insertBusinessSchema } from "@shared/schema";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
 import {
   Sheet,
@@ -19,10 +22,21 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   MapPin, 
   Phone, 
@@ -33,7 +47,8 @@ import {
   Heart, 
   Edit, 
   Trash2,
-  X 
+  X,
+  Loader2 
 } from "lucide-react";
 
 type BusinessDetailsProps = {
@@ -291,53 +306,397 @@ const BusinessDetails = ({ business, isOpen, onClose }: BusinessDetailsProps) =>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
+      {/* Edit Dialog with full form */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Business Information</DialogTitle>
             <DialogDescription>
               Update the details for {business.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="edit-name">Name</Label>
-              <Input 
-                id="edit-name" 
-                defaultValue={business.name}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-description">Description</Label>
-              <Input 
-                id="edit-description" 
-                defaultValue={business.description}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-address">Address</Label>
-              <Input 
-                id="edit-address" 
-                defaultValue={business.address}
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-            <Button onClick={() => {
-              toast({
-                title: "Business Updated",
-                description: "This feature will be fully implemented soon!",
-              });
-              setIsEditDialogOpen(false);
-            }}>
-              Save Changes
-            </Button>
-          </DialogFooter>
+
+          <EditBusinessForm 
+            business={business} 
+            onClose={() => setIsEditDialogOpen(false)} 
+          />
         </DialogContent>
       </Dialog>
     </>
+  );
+};
+
+// EditBusinessForm component
+type EditBusinessFormProps = {
+  business: Business;
+  onClose: () => void;
+};
+
+// Extend the schema with validation
+const editBusinessSchema = insertBusinessSchema.extend({
+  name: z.string().min(3, "Business name must be at least 3 characters"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  address: z.string().min(5, "Address must be at least 5 characters"),
+  phone: z.string().optional().nullable(),
+  website: z.string().url("Please enter a valid URL").or(z.string().length(0)).optional().nullable(),
+  latitude: z.number().or(z.string().transform(val => parseFloat(val))),
+  longitude: z.number().or(z.string().transform(val => parseFloat(val))),
+  imageUrl: z.string().optional().nullable(),
+});
+
+type EditFormValues = z.infer<typeof editBusinessSchema>;
+
+// Geocoding function to convert address to lat/lng
+async function geocodeAddress(address: string): Promise<{ lat: number, lon: number } | null> {
+  try {
+    const encodedAddress = encodeURIComponent(address);
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`);
+    
+    if (!response.ok) {
+      throw new Error(`Geocoding failed with status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.length === 0) {
+      return null;
+    }
+    
+    return {
+      lat: parseFloat(data[0].lat),
+      lon: parseFloat(data[0].lon)
+    };
+  } catch (error) {
+    console.error("Geocoding error:", error);
+    return null;
+  }
+}
+
+const EditBusinessForm = ({ business, onClose }: EditBusinessFormProps) => {
+  const { toast } = useToast();
+  const [isAddressChanged, setIsAddressChanged] = useState(false);
+  const [geocodingInProgress, setGeocodingInProgress] = useState(false);
+
+  // Set default values from business
+  const defaultValues: Partial<EditFormValues> = {
+    name: business.name,
+    description: business.description,
+    category: business.category,
+    address: business.address,
+    phone: business.phone || "",
+    website: business.website || "",
+    latitude: business.latitude,
+    longitude: business.longitude,
+    imageUrl: business.imageUrl || "",
+  };
+
+  const form = useForm<EditFormValues>({
+    resolver: zodResolver(editBusinessSchema),
+    defaultValues,
+  });
+
+  // Handle address change to trigger geocoding
+  const addressField = form.watch("address");
+  
+  useEffect(() => {
+    // Check if address changed from initial value
+    if (addressField !== business.address) {
+      setIsAddressChanged(true);
+    }
+  }, [addressField, business.address]);
+
+  // Update latitude and longitude when address changes
+  const updateCoordinates = async () => {
+    if (isAddressChanged && addressField) {
+      setGeocodingInProgress(true);
+      const coordinates = await geocodeAddress(addressField);
+      setGeocodingInProgress(false);
+      
+      if (coordinates) {
+        form.setValue('latitude', coordinates.lat);
+        form.setValue('longitude', coordinates.lon);
+        toast({
+          title: "Address Updated",
+          description: "We've updated the location coordinates based on the new address.",
+        });
+      } else {
+        toast({
+          title: "Geocoding Failed",
+          description: "Could not determine coordinates from the address. Please enter them manually.",
+          variant: "destructive",
+        });
+      }
+      
+      setIsAddressChanged(false);
+    }
+  };
+
+  const updateBusinessMutation = useMutation({
+    mutationFn: async (data: EditFormValues) => {
+      const response = await apiRequest("PUT", `/api/businesses/${business.id}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/businesses"] });
+      toast({
+        title: "Business Updated",
+        description: "Your business has been updated successfully!",
+      });
+      onClose();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `Failed to update business: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: EditFormValues) => {
+    // Ensure latitude and longitude are numbers
+    const formattedData = {
+      ...data,
+      latitude: typeof data.latitude === 'string' ? parseFloat(data.latitude) : data.latitude,
+      longitude: typeof data.longitude === 'string' ? parseFloat(data.longitude) : data.longitude,
+    };
+    
+    // Handle optional fields: remove empty strings instead of setting to null
+    const finalData = Object.fromEntries(
+      Object.entries(formattedData).filter(([key, value]) => {
+        // Keep required fields even if they're empty (although they shouldn't be due to validation)
+        if (['name', 'description', 'category', 'address', 'latitude', 'longitude'].includes(key)) {
+          return true;
+        }
+        // Filter out empty optional fields
+        return value !== "" && value !== null && value !== undefined;
+      })
+    );
+    
+    updateBusinessMutation.mutate(finalData as EditFormValues);
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Business Name <span className="text-red-500">*</span></FormLabel>
+              <FormControl>
+                <Input placeholder="Enter business name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category <span className="text-red-500">*</span></FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description <span className="text-red-500">*</span></FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Tell us about this business..."
+                  {...field}
+                  rows={3}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="flex flex-col space-y-2">
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Address <span className="text-red-500">*</span></FormLabel>
+                <div className="flex space-x-2">
+                  <FormControl>
+                    <Input placeholder="123 Main St, City, State ZIP" {...field} />
+                  </FormControl>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={updateCoordinates}
+                    disabled={!isAddressChanged || geocodingInProgress}
+                  >
+                    {geocodingInProgress ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : null}
+                    Update Location
+                  </Button>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone Number</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="(555) 123-4567" 
+                    value={field.value || ""} 
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="website"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Website</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="https://example.com" 
+                    value={field.value || ""} 
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="imageUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Image URL</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="https://example.com/image.jpg" 
+                  value={field.value || ""} 
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
+                />
+              </FormControl>
+              <FormDescription>
+                Provide a URL to an image of the business
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="mb-2">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium">Location Coordinates</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="latitude"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Latitude <span className="text-red-500">*</span></FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.0001" 
+                      {...field} 
+                      onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="longitude"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Longitude <span className="text-red-500">*</span></FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.0001" 
+                      {...field} 
+                      onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-0 mt-6">
+          <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>
+          <Button type="submit" disabled={updateBusinessMutation.isPending}>
+            {updateBusinessMutation.isPending ? (
+              <span className="flex items-center">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </span>
+            ) : (
+              'Save Changes'
+            )}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
   );
 };
 
