@@ -174,6 +174,7 @@ const HomePage = () => {
                 businesses={filteredBusinesses}
                 onBoundsChange={handleMapBoundsChange}
                 onBusinessSelect={handleBusinessSelect}
+                useGeolocation={true}
               />
               
               {user && (
