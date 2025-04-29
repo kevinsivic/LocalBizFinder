@@ -5,6 +5,7 @@ import csvParser from 'csv-parser';
 import { db } from './db';
 import { businesses, insertBusinessSchema } from '@shared/schema';
 import { log } from './vite';
+import { geocodeAddressWithRetry } from '@shared/geocoding';
 
 // Directory to watch for CSV files
 const CSV_DIRECTORY = path.resolve('./data/csv');
@@ -125,6 +126,37 @@ async function processCSVFile(filePath: string): Promise<void> {
           for (let index = 0; index < results.length; index++) {
             try {
               const row = results[index];
+              // Check for missing coordinates and use geocoding if necessary
+              let latitude = null;
+              let longitude = null;
+              
+              // Try to use provided coordinates first
+              if (row.latitude && row.longitude && !isNaN(parseFloat(row.latitude)) && !isNaN(parseFloat(row.longitude))) {
+                latitude = parseFloat(row.latitude);
+                longitude = parseFloat(row.longitude);
+                log(`Using provided coordinates for ${row.name}: ${latitude}, ${longitude}`, 'csv-watcher');
+              } 
+              // Use geocoding to get coordinates from address
+              else if (row.address) {
+                log(`Geocoding address for ${row.name}: ${row.address}`, 'csv-watcher');
+                try {
+                  // Add a delay between geocoding requests to respect rate limits
+                  const coordinates = await geocodeAddressWithRetry(row.address, 3, 1000);
+                  if (coordinates) {
+                    latitude = coordinates.lat;
+                    longitude = coordinates.lon;
+                    log(`Successfully geocoded address for ${row.name}: ${latitude}, ${longitude}`, 'csv-watcher');
+                  } else {
+                    throw new Error('Geocoding failed');
+                  }
+                } catch (error) {
+                  log(`Failed to geocode address for ${row.name}: ${error}`, 'csv-watcher');
+                  throw new Error(`Geocoding failed for address: ${row.address}`);
+                }
+              } else {
+                throw new Error('Missing both coordinates and address');
+              }
+              
               // Convert string values to correct types
               const businessData = {
                 name: row.name,
@@ -133,8 +165,8 @@ async function processCSVFile(filePath: string): Promise<void> {
                 address: row.address,
                 phone: row.phone || null,
                 website: row.website || null,
-                latitude: parseFloat(row.latitude),
-                longitude: parseFloat(row.longitude),
+                latitude: latitude,
+                longitude: longitude,
                 imageUrl: row.imageUrl || null,
                 // Using a default admin user ID (adjust as necessary)
                 createdBy: 1

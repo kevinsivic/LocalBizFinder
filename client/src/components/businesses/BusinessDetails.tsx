@@ -73,31 +73,8 @@ const editBusinessSchema = z.object({
 
 type EditFormValues = z.infer<typeof editBusinessSchema>;
 
-// Geocoding function to convert address to lat/lng
-async function geocodeAddress(address: string): Promise<{ lat: number, lon: number } | null> {
-  try {
-    const encodedAddress = encodeURIComponent(address);
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`);
-    
-    if (!response.ok) {
-      throw new Error(`Geocoding failed with status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (data.length === 0) {
-      return null;
-    }
-    
-    return {
-      lat: parseFloat(data[0].lat),
-      lon: parseFloat(data[0].lon)
-    };
-  } catch (error) {
-    console.error("Geocoding error:", error);
-    return null;
-  }
-}
+// Import geocoding function from shared library
+import { geocodeAddress } from "@shared/geocoding";
 
 const EditBusinessForm = ({ business, onClose }: EditBusinessFormProps) => {
   const { toast } = useToast();
