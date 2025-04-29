@@ -58,8 +58,8 @@ type IssueUpdateDialogProps = {
 function IssueUpdateDialog({ issue, isOpen, onClose }: IssueUpdateDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [status, setStatus] = useState(issue.status);
-  const [adminNotes, setAdminNotes] = useState(issue.adminNotes || "");
+  const [status, setStatus] = useState<string>(issue.status);
+  const [adminNotes, setAdminNotes] = useState<string>(issue.adminNotes || "");
   
   const updateIssueMutation = useMutation({
     mutationFn: async (data: { status: string; adminNotes: string }) => {
@@ -184,7 +184,7 @@ export default function IssueList({ businessId, className = "" }: IssueListProps
   const [selectedIssue, setSelectedIssue] = useState<IssueReport | null>(null);
   
   // Query to fetch issues
-  const { data: issues = [], isLoading } = useQuery({
+  const { data: issues = [], isLoading } = useQuery<IssueReport[]>({
     queryKey: businessId 
       ? [`/api/businesses/${businessId}/issues`] 
       : ["/api/issues"],
