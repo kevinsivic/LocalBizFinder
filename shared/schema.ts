@@ -80,12 +80,12 @@ export const issueReports = pgTable("issue_reports", {
 // Ratings table
 export const ratings = pgTable("ratings", {
   id: serial("id").primaryKey(),
-  businessId: integer("business_id").notNull().references(() => businesses.id, { onDelete: 'cascade' }),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  businessId: integer("businessId").notNull().references(() => businesses.id, { onDelete: 'cascade' }),
+  userId: integer("userId").notNull().references(() => users.id, { onDelete: 'cascade' }),
   rating: integer("rating").notNull(), // 1-5 stars
   comment: text("comment"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 // --------- RELATIONS ---------

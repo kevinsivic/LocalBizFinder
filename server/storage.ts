@@ -264,12 +264,19 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getRatingById(id: number): Promise<Rating | undefined> {
-    const [rating] = await db
-      .select()
-      .from(ratings)
-      .where(eq(ratings.id, id));
+    try {
+      console.log("Getting rating by ID:", id);
+      const [rating] = await db
+        .select()
+        .from(ratings)
+        .where(eq(ratings.id, id));
       
-    return rating;
+      console.log("Rating found:", rating);
+      return rating;
+    } catch (error: any) {
+      console.error("Error in getRatingById:", error);
+      throw new Error(`Failed to get rating: ${error.message}`);
+    }
   }
   
   async getRatingsByBusiness(businessId: number): Promise<Rating[]> {
@@ -286,11 +293,20 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getRatingsByUser(userId: number): Promise<Rating[]> {
-    return db
-      .select()
-      .from(ratings)
-      .where(eq(ratings.userId, userId))
-      .orderBy(desc(ratings.createdAt));
+    try {
+      console.log("Getting ratings for user ID:", userId);
+      const result = await db
+        .select()
+        .from(ratings)
+        .where(eq(ratings.userId, userId))
+        .orderBy(desc(ratings.createdAt));
+      
+      console.log(`Found ${result.length} ratings for user ${userId}`);
+      return result;
+    } catch (error: any) {
+      console.error('SQL Error in getRatingsByUser:', error);
+      throw new Error(`Failed to fetch user ratings: ${error.message}`);
+    }
   }
   
   async getUserRatingForBusiness(userId: number, businessId: number): Promise<Rating | undefined> {
@@ -370,7 +386,14 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteRating(id: number): Promise<void> {
-    await db.delete(ratings).where(eq(ratings.id, id));
+    try {
+      console.log("Deleting rating with ID:", id);
+      await db.delete(ratings).where(eq(ratings.id, id));
+      console.log("Rating deleted successfully");
+    } catch (error: any) {
+      console.error("Error in deleteRating:", error);
+      throw new Error(`Failed to delete rating: ${error.message}`);
+    }
   }
 
   private async initializeDatabase() {
