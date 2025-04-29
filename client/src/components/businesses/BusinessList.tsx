@@ -33,7 +33,8 @@ const BusinessList = ({ businesses, isLoading, onSelectBusiness }: BusinessListP
 
   return (
     <div 
-      className="w-full bg-white overflow-y-auto border-t lg:border-t-0 lg:border-l border-neutral-200"
+      className="w-full h-full bg-white overflow-y-auto border-t lg:border-t-0 lg:border-l border-neutral-200 overscroll-contain"
+      style={{ WebkitOverflowScrolling: 'touch' }}
       onScroll={handleScroll}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}

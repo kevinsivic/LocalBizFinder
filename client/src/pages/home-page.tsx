@@ -30,6 +30,8 @@ const HomePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
+  // Stores the last known map bounds when in map view for use when switching back from list view
+  const [lastMapBounds, setLastMapBounds] = useState<[number, number, number, number] | null>(null);
   
   // Get all businesses from the API
   const { data: businesses = [], isLoading } = useQuery<Business[]>({
@@ -59,13 +61,11 @@ const HomePage = () => {
   });
 
   const handleMapBoundsChange = (bounds: [number, number, number, number]) => {
-    // In mobile view with list mode active, don't update bounds to prevent list refreshing
-    // when user is just trying to scroll the list
-    const isMobile = window.innerWidth < 1024;
-    const isListModeActive = viewMode === "list";
-    
-    if (!(isMobile && isListModeActive)) {
+    // Only update bounds when in map view to prevent list refreshing when switching views
+    if (viewMode === "map") {
       setMapBounds(bounds);
+      // Also save as last known bounds
+      setLastMapBounds(bounds);
     }
   };
 
@@ -128,7 +128,13 @@ const HomePage = () => {
                     <Button 
                       variant={viewMode === "map" ? "default" : "outline"} 
                       className={`rounded-l-md rounded-r-none ${viewMode === "map" ? "text-white" : "text-neutral-700"}`}
-                      onClick={() => setViewMode("map")}
+                      onClick={() => {
+                        // When switching to map view, restore last map bounds if available
+                        if (viewMode === "list" && lastMapBounds) {
+                          setMapBounds(lastMapBounds);
+                        }
+                        setViewMode("map");
+                      }}
                     >
                       <MapPin className="mr-2 h-4 w-4" />
                       Map
@@ -136,7 +142,13 @@ const HomePage = () => {
                     <Button 
                       variant={viewMode === "list" ? "default" : "outline"} 
                       className={`rounded-r-md rounded-l-none ${viewMode === "list" ? "text-white" : "text-neutral-700"}`}
-                      onClick={() => setViewMode("list")}
+                      onClick={() => {
+                        // When switching to list view, save current map bounds
+                        if (viewMode === "map" && mapBounds) {
+                          setLastMapBounds(mapBounds);
+                        }
+                        setViewMode("list");
+                      }}
                     >
                       <List className="mr-2 h-4 w-4" />
                       List
@@ -168,16 +180,10 @@ const HomePage = () => {
             </div>
           </div>
 
-          {/* Split View Container */}
-          <div className="flex flex-col lg:flex-row flex-grow overflow-hidden">
-            {/* Map View */}
-            <div 
-              className={`${
-                viewMode === "map" || (viewMode === "list" && window.innerWidth >= 1024)
-                  ? "w-full lg:w-3/5 h-[400px] lg:h-full"
-                  : "hidden"
-              }`}
-            >
+          {/* Split View Container - Desktop */}
+          <div className="hidden lg:flex lg:flex-row flex-grow overflow-hidden">
+            {/* Map View - Desktop */}
+            <div className="w-3/5 h-full">
               <Map 
                 businesses={filteredBusinesses}
                 onBoundsChange={handleMapBoundsChange}
@@ -198,20 +204,52 @@ const HomePage = () => {
               )}
             </div>
             
-            {/* Business Listings */}
-            <div 
-              className={`${
-                viewMode === "list" || (viewMode === "map" && window.innerWidth >= 1024)
-                  ? "w-full lg:w-2/5"
-                  : "hidden"
-              }`}
-            >
+            {/* Business Listings - Desktop */}
+            <div className="w-2/5">
               <BusinessList 
                 businesses={filteredBusinesses}
                 isLoading={isLoading}
                 onSelectBusiness={handleBusinessSelect}
               />
             </div>
+          </div>
+          
+          {/* Mobile View - Completely separate Map and List to avoid interaction */}
+          <div className="flex lg:hidden flex-col flex-grow overflow-hidden">
+            {/* Map View - Mobile */}
+            {viewMode === "map" && (
+              <div className="w-full h-[calc(100vh-12rem)]">
+                <Map 
+                  businesses={filteredBusinesses}
+                  onBoundsChange={handleMapBoundsChange}
+                  onBusinessSelect={handleBusinessSelect}
+                  useGeolocation={true}
+                />
+                
+                {user && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
+                    <Button
+                      onClick={() => setIsAddBusinessOpen(true)}
+                      className="items-center shadow-md"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Business
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Business Listings - Mobile */}
+            {viewMode === "list" && (
+              <div className="w-full h-[calc(100vh-12rem)] overflow-hidden">
+                <BusinessList 
+                  businesses={filteredBusinesses}
+                  isLoading={isLoading}
+                  onSelectBusiness={handleBusinessSelect}
+                />
+              </div>
+            )}
           </div>
         </div>
       </main>
