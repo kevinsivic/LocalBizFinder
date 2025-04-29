@@ -16,8 +16,28 @@ const BusinessList = ({ businesses, isLoading, onSelectBusiness }: BusinessListP
     setDisplayLimit(prev => prev + 5);
   };
 
+  // These functions prevent events from propagating to parent elements
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    // Stop propagation of scroll events
+    e.stopPropagation();
+  };
+  
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    // Don't stop propagation here, as it would prevent normal touch behavior
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    // This prevents the map from panning when scrolling the list on touchscreens
+    e.stopPropagation();
+  };
+
   return (
-    <div className="w-full bg-white overflow-y-auto border-t lg:border-t-0 lg:border-l border-neutral-200">
+    <div 
+      className="w-full bg-white overflow-y-auto border-t lg:border-t-0 lg:border-l border-neutral-200"
+      onScroll={handleScroll}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+    >
       <div className="p-4">
         <h2 className="text-lg font-semibold text-neutral-800">
           {businesses.length} Local Businesses

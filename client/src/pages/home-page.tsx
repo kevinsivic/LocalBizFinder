@@ -34,8 +34,9 @@ const HomePage = () => {
   // Get all businesses from the API
   const { data: businesses = [], isLoading } = useQuery<Business[]>({
     queryKey: ["/api/businesses", mapBounds],
-    queryFn: async ({ queryKey }: { queryKey: [string, [number, number, number, number] | null] }) => {
-      const [_, bounds] = queryKey;
+    queryFn: async ({ queryKey }) => {
+      // We need to type cast to access the bounds since QueryKey is readonly
+      const bounds = queryKey[1] as [number, number, number, number] | null;
       let url = "/api/businesses";
       if (bounds) {
         url += `?bounds=${bounds.join(",")}`;
@@ -49,7 +50,7 @@ const HomePage = () => {
   });
 
   // Filter businesses based on search query and category
-  const filteredBusinesses = businesses.filter((business) => {
+  const filteredBusinesses = businesses.filter((business: Business) => {
     const matchesSearch = business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          business.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          business.address.toLowerCase().includes(searchQuery.toLowerCase());
@@ -58,7 +59,14 @@ const HomePage = () => {
   });
 
   const handleMapBoundsChange = (bounds: [number, number, number, number]) => {
-    setMapBounds(bounds);
+    // In mobile view with list mode active, don't update bounds to prevent list refreshing
+    // when user is just trying to scroll the list
+    const isMobile = window.innerWidth < 1024;
+    const isListModeActive = viewMode === "list";
+    
+    if (!(isMobile && isListModeActive)) {
+      setMapBounds(bounds);
+    }
   };
 
   const handleBusinessSelect = (business: Business) => {
