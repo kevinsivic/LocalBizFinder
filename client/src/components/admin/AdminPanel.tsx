@@ -33,7 +33,7 @@ const AdminPanel = ({ isOpen, onClose }: AdminPanelProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [page, setPage] = useState(1);
   const perPage = 5;
 
@@ -72,7 +72,7 @@ const AdminPanel = ({ isOpen, onClose }: AdminPanelProps) => {
     const matchesSearch = business.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          business.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          business.address.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || business.category === selectedCategory;
+    const matchesCategory = selectedCategory === "all" || business.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
