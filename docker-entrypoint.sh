@@ -26,43 +26,35 @@ wait_for_db() {
 run_migrations() {
   echo "🔄 Running database migrations with Drizzle..."
   
-  # Generate migration directory if it doesn't exist
-  mkdir -p ./migrations
-  
-  # Generate migration files from schema
-  echo "🔄 Generating migration files..."
-  npx drizzle-kit generate:pg
-  
-  # Push schema changes to database (this is critical for the ratings table)
-  echo "🔄 Applying schema changes to database..."
-  if npx drizzle-kit push:pg; then
-    echo "✅ Database migrations completed successfully."
+  # First, execute our explicit SQL migrations
+  echo "🔄 Executing SQL migrations..."
+  if node migrations/apply-migrations.js; then
+    echo "✅ SQL migrations completed successfully."
   else
-    echo "❌ Database migration failed with drizzle-kit push:pg."
-    echo "🔄 Trying alternative push method..."
-    
-    # Try npm script which might have better configuration
-    if npm run db:push; then
-      echo "✅ Database migrations completed successfully with npm run db:push."
-    else
-      echo "❌ Database migration failed with npm run db:push."
-      
-      if [ "$NODE_ENV" = "production" ]; then
-        echo "⚠️ Production environment - attempting direct schema push one more time..."
-        # Try one more approach in production before failing
-        if NODE_ENV=production npx drizzle-kit push --verbose; then
-          echo "✅ Database migrations finally succeeded."
-          return 0
-        else
-          echo "❌ All migration attempts failed in production. Exiting."
-          exit 1
-        fi
+    echo "❌ SQL migrations failed."
+    if [ "$NODE_ENV" = "production" ]; then
+      echo "⚠️ Production environment - trying direct SQL execution..."
+      # Run the ratings table creation manually as a last resort
+      if psql "$DATABASE_URL" -f migrations/0001_create_ratings_table.sql; then
+        echo "✅ Direct SQL execution succeeded."
       else
-        echo "⚠️ Development environment - continuing despite migration errors."
-        echo "🔧 Attempting to initialize database manually..."
-        # Use the custom initialization script
-        node server/init-db.js
+        echo "❌ All migration attempts failed in production. Exiting."
+        exit 1
       fi
+    fi
+  fi
+  
+  # Generate migration files from schema for any remaining tables
+  echo "🔄 Ensuring complete schema with Drizzle push..."
+  if npx drizzle-kit push:pg; then
+    echo "✅ Additional schema changes applied successfully."
+  else
+    echo "⚠️ Schema push had issues, but we'll continue since SQL migrations ran."
+    
+    if [ "$NODE_ENV" != "production" ]; then
+      echo "🔧 Attempting to initialize database manually in development..."
+      # Use the custom initialization script in development
+      node server/init-db.js
     fi
   fi
 }
