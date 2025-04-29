@@ -208,7 +208,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Regular users can only see issues they reported, admins can see all
       if (!req.user?.isAdmin) {
-        const issues = await storage.getIssueReportsByUser(req.user?.id);
+        if (!req.user?.id) {
+          return res.status(401).send("Unauthorized");
+        }
+        const issues = await storage.getIssueReportsByUser(req.user.id);
         const filteredIssues = issues.filter(issue => issue.businessId === businessId);
         return res.json(filteredIssues);
       }
