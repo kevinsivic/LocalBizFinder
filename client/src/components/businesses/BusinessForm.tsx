@@ -97,9 +97,14 @@ const BusinessForm = ({ isOpen, onClose }: BusinessFormProps) => {
   });
 
   const onSubmit = (data: FormValues) => {
+    console.log("Form submitted with data:", data);
+    console.log("Current step:", step);
+    
     if (step === 1) {
+      console.log("Moving to step 2");
       setStep(2);
     } else {
+      console.log("Submitting business data");
       // Ensure latitude and longitude are numbers
       const formattedData = {
         ...data,
@@ -109,11 +114,17 @@ const BusinessForm = ({ isOpen, onClose }: BusinessFormProps) => {
       
       // Handle optional fields: remove empty strings instead of setting to null
       const finalData = Object.fromEntries(
-        Object.entries(formattedData).filter(([_, value]) => 
-          value !== "" && value !== null && value !== undefined
-        )
+        Object.entries(formattedData).filter(([key, value]) => {
+          // Keep required fields even if they're empty (although they shouldn't be due to validation)
+          if (['name', 'description', 'category', 'address', 'latitude', 'longitude'].includes(key)) {
+            return true;
+          }
+          // Filter out empty optional fields
+          return value !== "" && value !== null && value !== undefined;
+        })
       );
       
+      console.log("Submitting final data:", finalData);
       createBusinessMutation.mutate(finalData as FormValues);
     }
   };
@@ -338,17 +349,55 @@ const BusinessForm = ({ isOpen, onClose }: BusinessFormProps) => {
               >
                 {step === 1 ? "Cancel" : "Back"}
               </Button>
-              <Button 
-                type="submit" 
-                disabled={createBusinessMutation.isPending}
-              >
-                {createBusinessMutation.isPending ? (
-                  <span className="flex items-center">
-                    <span className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></span>
-                    Saving...
-                  </span>
-                ) : step === 1 ? "Next" : "Add Business"}
-              </Button>
+              {step === 1 ? (
+                <Button 
+                  type="button" 
+                  onClick={() => {
+                    // Validate only the fields from step 1
+                    const currentData = form.getValues();
+                    console.log("Current form data:", currentData);
+                    
+                    // Manually validate required fields
+                    const errors = [];
+                    if (!currentData.name || currentData.name.length < 3) {
+                      errors.push("Business name is required and must be at least 3 characters");
+                    }
+                    if (!currentData.category) {
+                      errors.push("Category is required");
+                    }
+                    if (!currentData.description || currentData.description.length < 10) {
+                      errors.push("Description is required and must be at least 10 characters");
+                    }
+                    if (!currentData.address || currentData.address.length < 5) {
+                      errors.push("Address is required and must be at least 5 characters");
+                    }
+                    
+                    if (errors.length > 0) {
+                      console.error("Validation errors:", errors);
+                      // Trigger form validation
+                      form.trigger(["name", "category", "description", "address"]);
+                    } else {
+                      // If validation passes, proceed to next step
+                      console.log("Moving to step 2 (button click)");
+                      setStep(2);
+                    }
+                  }}
+                >
+                  Next
+                </Button>
+              ) : (
+                <Button 
+                  type="submit" 
+                  disabled={createBusinessMutation.isPending}
+                >
+                  {createBusinessMutation.isPending ? (
+                    <span className="flex items-center">
+                      <span className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></span>
+                      Saving...
+                    </span>
+                  ) : "Add Business"}
+                </Button>
+              )}
             </DialogFooter>
           </form>
         </Form>
