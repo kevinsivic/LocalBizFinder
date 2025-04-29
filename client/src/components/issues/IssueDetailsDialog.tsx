@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { IssueReport, Business } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { trackEvent, AnalyticsEvent } from "@/lib/analytics";
 import { format } from "date-fns";
 
 import {
@@ -65,7 +66,17 @@ export default function IssueDetailsDialog({
       const res = await apiRequest("PATCH", `/api/issues/${issue.id}`, data);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Track issue resolution event
+      trackEvent(AnalyticsEvent.ISSUE_RESOLVE, {
+        issueId: issue.id.toString(),
+        businessId: issue.businessId.toString(),
+        businessName: businessName,
+        issueType: issue.issueType,
+        newStatus: variables.status,
+        hasAdminNotes: variables.adminNotes ? 'true' : 'false'
+      });
+      
       toast({
         title: "Issue updated",
         description: `The issue has been marked as ${status}`,

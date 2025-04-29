@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Business } from "@shared/schema";
+import { trackEvent, AnalyticsEvent } from "@/lib/analytics";
 import "leaflet/dist/leaflet.css";
 
 type MapProps = {
@@ -97,6 +98,14 @@ const Map = ({
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(map);
+      
+      // Track map view event
+      trackEvent(AnalyticsEvent.MAP_VIEW, {
+        initialLatitude: initialCenter[0].toString(),
+        initialLongitude: initialCenter[1].toString(),
+        initialZoom: initialZoom.toString(),
+        hasUserLocation: userLocation ? 'true' : 'false'
+      });
 
       // Add user location marker if available
       if (userLocation) {
@@ -116,12 +125,36 @@ const Map = ({
       if (onBoundsChange) {
         map.on('moveend', () => {
           const bounds = map.getBounds();
+          const center = map.getCenter();
+          
+          // Track map drag event
+          if (map.getZoom() === initialZoom) {
+            trackEvent(AnalyticsEvent.MAP_DRAG, {
+              latitude: center.lat.toFixed(4),
+              longitude: center.lng.toFixed(4)
+            });
+          }
+          
           onBoundsChange([
             bounds.getSouth(),
             bounds.getWest(),
             bounds.getNorth(),
             bounds.getEast()
           ]);
+        });
+        
+        // Track zoom events
+        map.on('zoomend', () => {
+          const zoom = map.getZoom();
+          const center = map.getCenter();
+          
+          if (zoom !== initialZoom) {
+            trackEvent(AnalyticsEvent.MAP_ZOOM, {
+              zoomLevel: zoom.toString(),
+              latitude: center.lat.toFixed(4),
+              longitude: center.lng.toFixed(4)
+            });
+          }
         });
         
         // Trigger the initial bounds change
@@ -162,6 +195,14 @@ const Map = ({
         
         if (onBusinessSelect) {
           marker.on('click', () => {
+            // Track business view from map event
+            trackEvent(AnalyticsEvent.BUSINESS_VIEW, {
+              businessId: business.id.toString(),
+              businessName: business.name,
+              source: 'map_marker',
+              category: business.category
+            });
+            
             onBusinessSelect(business);
           });
         }
