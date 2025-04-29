@@ -31,22 +31,28 @@ run_migrations() {
   if node migrations/apply-migrations.js; then
     echo "✅ SQL migrations completed successfully."
   else
-    echo "❌ SQL migrations failed."
+    echo "❌ SQL migrations failed with node apply-migrations.js"
     if [ "$NODE_ENV" = "production" ]; then
       echo "⚠️ Production environment - trying direct SQL execution..."
       # Run the ratings table creation manually as a last resort
       if psql "$DATABASE_URL" -f migrations/0001_create_ratings_table.sql; then
         echo "✅ Direct SQL execution succeeded."
       else
-        echo "❌ All migration attempts failed in production. Exiting."
-        exit 1
+        echo "❌ All SQL migration attempts failed in production."
+        echo "⚠️ Last attempt: trying to create ratings table with basic SQL..."
+        if psql "$DATABASE_URL" -c 'CREATE TABLE IF NOT EXISTS "ratings" ("id" SERIAL PRIMARY KEY, "businessId" INTEGER NOT NULL, "userId" INTEGER NOT NULL, "rating" INTEGER NOT NULL, "comment" TEXT, "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL, "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL);'; then
+          echo "✅ Basic ratings table created."
+        else
+          echo "❌ All migration attempts failed. Exiting."
+          exit 1
+        fi
       fi
     fi
   fi
   
   # Generate migration files from schema for any remaining tables
   echo "🔄 Ensuring complete schema with Drizzle push..."
-  if npx drizzle-kit push:pg; then
+  if npx drizzle-kit push; then
     echo "✅ Additional schema changes applied successfully."
   else
     echo "⚠️ Schema push had issues, but we'll continue since SQL migrations ran."
