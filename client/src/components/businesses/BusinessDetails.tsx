@@ -201,9 +201,14 @@ const EditBusinessForm = ({ business, onClose }: EditBusinessFormProps) => {
     updateBusinessMutation.mutate(formattedData as EditFormValues);
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    form.handleSubmit(onSubmit)();
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
@@ -409,7 +414,20 @@ const EditBusinessForm = ({ business, onClose }: EditBusinessFormProps) => {
 
         <DialogFooter className="gap-2 sm:gap-0 mt-6">
           <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={updateBusinessMutation.isPending}>
+          <Button 
+            type="button" 
+            onClick={async () => {
+              console.log("Manual submit button clicked");
+              const isValid = await form.trigger();
+              console.log("Form validation:", isValid);
+              if (isValid) {
+                const values = form.getValues();
+                console.log("Form values:", values);
+                onSubmit(values);
+              }
+            }} 
+            disabled={updateBusinessMutation.isPending}
+          >
             {updateBusinessMutation.isPending ? (
               <span className="flex items-center">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -690,10 +708,12 @@ const BusinessDetails = ({ business, isOpen, onClose }: BusinessDetailsProps) =>
             </DialogDescription>
           </DialogHeader>
 
-          <EditBusinessForm 
-            business={business} 
-            onClose={() => setIsEditDialogOpen(false)} 
-          />
+          {isEditDialogOpen && (
+            <EditBusinessForm 
+              business={business} 
+              onClose={() => setIsEditDialogOpen(false)} 
+            />
+          )}
         </DialogContent>
       </Dialog>
     </>
