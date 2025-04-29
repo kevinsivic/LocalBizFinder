@@ -15,7 +15,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { MapPin, Menu, LogIn, LogOut, User, ShieldCheck } from "lucide-react";
+import { MapPin, Menu, LogIn, LogOut, User, ShieldCheck, AlertTriangle } from "lucide-react";
 
 const Header = () => {
   const { user, logoutMutation } = useAuth();
@@ -78,9 +78,14 @@ const Header = () => {
                     <User className="mr-2 h-4 w-4" /> Profile
                   </DropdownMenuItem>
                   {user.isAdmin && (
-                    <DropdownMenuItem onClick={() => navigate("/admin")}>
-                      <ShieldCheck className="mr-2 h-4 w-4" /> Admin Panel
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem onClick={() => navigate("/admin")}>
+                        <ShieldCheck className="mr-2 h-4 w-4" /> Admin Panel
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/issues")}>
+                        <AlertTriangle className="mr-2 h-4 w-4" /> Issue Reports
+                      </DropdownMenuItem>
+                    </>
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
@@ -152,11 +157,18 @@ const Header = () => {
                           Profile
                         </a>
                         {user.isAdmin && (
-                          <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
-                            <div className="block px-4 py-2 text-base font-medium text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100">
-                              Admin Panel
-                            </div>
-                          </Link>
+                          <>
+                            <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
+                              <div className="block px-4 py-2 text-base font-medium text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100">
+                                Admin Panel
+                              </div>
+                            </Link>
+                            <Link href="/issues" onClick={() => setMobileMenuOpen(false)}>
+                              <div className="block px-4 py-2 text-base font-medium text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100">
+                                Issue Reports
+                              </div>
+                            </Link>
+                          </>
                         )}
                         <button
                           onClick={() => {

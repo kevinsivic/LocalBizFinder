@@ -10,6 +10,7 @@ import AboutPage from "@/pages/about-page";
 import LoginPage from "@/pages/login-page";
 import RegisterPage from "@/pages/register-page";
 import AdminPage from "@/pages/admin-page";
+import IssuesPage from "@/pages/issues-page";
 import { AdminRoute } from "./lib/protected-route";
 
 function Router() {
@@ -25,8 +26,9 @@ function Router() {
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
       
-      {/* Protected admin route */}
+      {/* Protected admin routes */}
       <AdminRoute path="/admin" component={AdminPage} />
+      <AdminRoute path="/issues" component={IssuesPage} />
       
       {/* 404 page */}
       <Route component={NotFound} />
