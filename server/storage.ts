@@ -248,11 +248,16 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getRatingsByBusiness(businessId: number): Promise<Rating[]> {
-    return db
-      .select()
-      .from(ratings)
-      .where(eq(ratings.businessId, businessId))
-      .orderBy(desc(ratings.createdAt));
+    try {
+      return db
+        .select()
+        .from(ratings)
+        .where(eq(ratings.businessId, businessId))
+        .orderBy(desc(ratings.createdAt));
+    } catch (error) {
+      console.error('SQL Error in getRatingsByBusiness:', error);
+      throw new Error(`Failed to fetch ratings: ${error.message}`);
+    }
   }
   
   async getRatingsByUser(userId: number): Promise<Rating[]> {
@@ -264,31 +269,41 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserRatingForBusiness(userId: number, businessId: number): Promise<Rating | undefined> {
-    const [rating] = await db
-      .select()
-      .from(ratings)
-      .where(
-        and(
-          eq(ratings.userId, userId),
-          eq(ratings.businessId, businessId)
-        )
-      );
+    try {
+      const [rating] = await db
+        .select()
+        .from(ratings)
+        .where(
+          and(
+            eq(ratings.userId, userId),
+            eq(ratings.businessId, businessId)
+          )
+        );
       
-    return rating;
+      return rating;
+    } catch (error) {
+      console.error('SQL Error in getUserRatingForBusiness:', error);
+      throw new Error(`Failed to fetch your rating: ${error.message}`);
+    }
   }
   
   async getAverageRatingForBusiness(businessId: number): Promise<number> {
-    const businessRatings = await this.getRatingsByBusiness(businessId);
-    
-    if (businessRatings.length === 0) {
-      return 0;
+    try {
+      const businessRatings = await this.getRatingsByBusiness(businessId);
+      
+      if (businessRatings.length === 0) {
+        return 0;
+      }
+      
+      const sum = businessRatings.reduce((total, rating) => total + rating.rating, 0);
+      const average = sum / businessRatings.length;
+      
+      // Round to one decimal place
+      return Math.round(average * 10) / 10;
+    } catch (error: any) {
+      console.error('Error fetching average rating:', error);
+      throw new Error(`Failed to fetch average rating: ${error.message}`);
     }
-    
-    const sum = businessRatings.reduce((total, rating) => total + rating.rating, 0);
-    const average = sum / businessRatings.length;
-    
-    // Round to one decimal place
-    return Math.round(average * 10) / 10;
   }
   
   async updateRating(id: number, ratingData: Partial<InsertRating>): Promise<Rating> {
