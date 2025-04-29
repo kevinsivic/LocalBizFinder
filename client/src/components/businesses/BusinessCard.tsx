@@ -2,17 +2,20 @@ import { Business } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Phone, Globe, Star } from "lucide-react";
+import { formatDistance } from "@/lib/geo-utils";
 
 type BusinessCardProps = {
   business: Business;
   onClick?: () => void;
+  userLocation?: [number, number] | null;
+  distanceValue?: number | null;
 };
 
-const BusinessCard = ({ business, onClick }: BusinessCardProps) => {
+const BusinessCard = ({ business, onClick, userLocation, distanceValue }: BusinessCardProps) => {
   const defaultImageUrl = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80";
   
-  // Calculate distance (would need user's location in a real app)
-  const distance = "0.7";
+  // Format the distance to display (handle undefined safely)
+  const formattedDistance = distanceValue !== undefined ? formatDistance(distanceValue) : "Unknown distance";
 
   return (
     <Card 
@@ -53,7 +56,7 @@ const BusinessCard = ({ business, onClick }: BusinessCardProps) => {
             </p>
             <div className="mt-2 flex items-center text-xs text-neutral-500">
               <MapPin className="h-3 w-3 mr-1" />
-              <span>{distance} miles away • {business.address}</span>
+              <span>{formattedDistance} • {business.address}</span>
             </div>
           </div>
         </div>

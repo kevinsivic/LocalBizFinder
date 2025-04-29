@@ -2,19 +2,49 @@ import { Business } from "@shared/schema";
 import BusinessCard from "./BusinessCard";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { calculateDistance } from "@/lib/geo-utils";
 
 type BusinessListProps = {
   businesses: Business[];
   isLoading: boolean;
   onSelectBusiness: (business: Business) => void;
+  userLocation?: [number, number] | null;
 };
 
-const BusinessList = ({ businesses, isLoading, onSelectBusiness }: BusinessListProps) => {
+const BusinessList = ({ businesses, isLoading, onSelectBusiness, userLocation }: BusinessListProps) => {
   const [displayLimit, setDisplayLimit] = useState(5);
   
   const loadMore = () => {
     setDisplayLimit(prev => prev + 5);
   };
+
+  // Calculate distances for each business if we have user location
+  const businessesWithDistances = businesses.map(business => {
+    let distance: number | null = null;
+    
+    if (userLocation) {
+      distance = calculateDistance(
+        userLocation[0], 
+        userLocation[1], 
+        business.latitude, 
+        business.longitude
+      );
+    }
+    
+    return {
+      business,
+      distance
+    };
+  });
+  
+  // Sort businesses by distance if available
+  if (userLocation) {
+    businessesWithDistances.sort((a, b) => {
+      if (a.distance === null) return 1;
+      if (b.distance === null) return -1;
+      return a.distance - b.distance;
+    });
+  }
 
   // These functions prevent events from propagating to parent elements
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -59,16 +89,18 @@ const BusinessList = ({ businesses, isLoading, onSelectBusiness }: BusinessListP
       ) : (
         <>
           <div className="divide-y divide-neutral-200">
-            {businesses.slice(0, displayLimit).map((business) => (
+            {businessesWithDistances.slice(0, displayLimit).map(({ business, distance }) => (
               <BusinessCard 
                 key={business.id} 
                 business={business} 
                 onClick={() => onSelectBusiness(business)}
+                userLocation={userLocation}
+                distanceValue={distance}
               />
             ))}
           </div>
           
-          {displayLimit < businesses.length && (
+          {displayLimit < businessesWithDistances.length && (
             <div className="p-4 text-center">
               <Button 
                 variant="outline" 
