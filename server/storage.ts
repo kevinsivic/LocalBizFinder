@@ -2,7 +2,8 @@ import {
   users, type User, type InsertUser, 
   businesses, type Business, type InsertBusiness,
   businessHours, type BusinessHours, type InsertBusinessHours,
-  issueReports, type IssueReport, type InsertIssueReport
+  issueReports, type IssueReport, type InsertIssueReport,
+  ratings, type Rating, type InsertRating
 } from "@shared/schema";
 import session from "express-session";
 import { db, pool } from "./db";
@@ -36,6 +37,16 @@ export interface IStorage {
   getIssueReportsByUser(userId: number): Promise<IssueReport[]>;
   getAllIssueReports(): Promise<IssueReport[]>;
   updateIssueReport(id: number, update: Partial<IssueReport>): Promise<IssueReport>;
+  
+  // Rating methods
+  createRating(rating: InsertRating): Promise<Rating>;
+  getRatingById(id: number): Promise<Rating | undefined>;
+  getRatingsByBusiness(businessId: number): Promise<Rating[]>;
+  getRatingsByUser(userId: number): Promise<Rating[]>;
+  getUserRatingForBusiness(userId: number, businessId: number): Promise<Rating | undefined>;
+  getAverageRatingForBusiness(businessId: number): Promise<number>;
+  updateRating(id: number, rating: Partial<InsertRating>): Promise<Rating>;
+  deleteRating(id: number): Promise<void>;
   
   // Session store
   sessionStore: any; // Using any type to avoid type issues with session store
@@ -206,6 +217,102 @@ export class DatabaseStorage implements IStorage {
     }
     
     return updatedReport;
+  }
+  
+  // Rating methods
+  async createRating(rating: InsertRating): Promise<Rating> {
+    // Check if user already rated this business
+    const existing = await this.getUserRatingForBusiness(rating.userId, rating.businessId);
+    
+    if (existing) {
+      // If a rating already exists, update it
+      return this.updateRating(existing.id, rating);
+    }
+    
+    // Create new rating
+    const [newRating] = await db
+      .insert(ratings)
+      .values(rating)
+      .returning();
+      
+    return newRating;
+  }
+  
+  async getRatingById(id: number): Promise<Rating | undefined> {
+    const [rating] = await db
+      .select()
+      .from(ratings)
+      .where(eq(ratings.id, id));
+      
+    return rating;
+  }
+  
+  async getRatingsByBusiness(businessId: number): Promise<Rating[]> {
+    return db
+      .select()
+      .from(ratings)
+      .where(eq(ratings.businessId, businessId))
+      .orderBy(desc(ratings.createdAt));
+  }
+  
+  async getRatingsByUser(userId: number): Promise<Rating[]> {
+    return db
+      .select()
+      .from(ratings)
+      .where(eq(ratings.userId, userId))
+      .orderBy(desc(ratings.createdAt));
+  }
+  
+  async getUserRatingForBusiness(userId: number, businessId: number): Promise<Rating | undefined> {
+    const [rating] = await db
+      .select()
+      .from(ratings)
+      .where(
+        and(
+          eq(ratings.userId, userId),
+          eq(ratings.businessId, businessId)
+        )
+      );
+      
+    return rating;
+  }
+  
+  async getAverageRatingForBusiness(businessId: number): Promise<number> {
+    const businessRatings = await this.getRatingsByBusiness(businessId);
+    
+    if (businessRatings.length === 0) {
+      return 0;
+    }
+    
+    const sum = businessRatings.reduce((total, rating) => total + rating.rating, 0);
+    const average = sum / businessRatings.length;
+    
+    // Round to one decimal place
+    return Math.round(average * 10) / 10;
+  }
+  
+  async updateRating(id: number, ratingData: Partial<InsertRating>): Promise<Rating> {
+    // Set updated timestamp
+    const dataToUpdate = {
+      ...ratingData,
+      updatedAt: new Date()
+    };
+    
+    const [updatedRating] = await db
+      .update(ratings)
+      .set(dataToUpdate)
+      .where(eq(ratings.id, id))
+      .returning();
+      
+    if (!updatedRating) {
+      throw new Error(`Rating with id ${id} not found`);
+    }
+    
+    return updatedRating;
+  }
+  
+  async deleteRating(id: number): Promise<void> {
+    await db.delete(ratings).where(eq(ratings.id, id));
   }
 
   private async initializeDatabase() {

@@ -77,6 +77,17 @@ export const issueReports = pgTable("issue_reports", {
   resolvedBy: integer("resolved_by").references(() => users.id),
 });
 
+// Ratings table
+export const ratings = pgTable("ratings", {
+  id: serial("id").primaryKey(),
+  businessId: integer("business_id").notNull().references(() => businesses.id, { onDelete: 'cascade' }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  rating: integer("rating").notNull(), // 1-5 stars
+  comment: text("comment"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // --------- RELATIONS ---------
 
 // User relations
@@ -84,6 +95,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   businesses: many(businesses),
   reportedIssues: many(issueReports, { relationName: "reporter" }),
   resolvedIssues: many(issueReports, { relationName: "resolver" }),
+  ratings: many(ratings),
 }));
 
 // Business relations
@@ -94,6 +106,7 @@ export const businessesRelations = relations(businesses, ({ one, many }) => ({
   }),
   hours: many(businessHours),
   issues: many(issueReports),
+  ratings: many(ratings),
 }));
 
 // Business hours relations
@@ -116,6 +129,18 @@ export const issueReportsRelations = relations(issueReports, ({ one }) => ({
   }),
   resolver: one(users, {
     fields: [issueReports.resolvedBy],
+    references: [users.id],
+  }),
+}));
+
+// Rating relations
+export const ratingsRelations = relations(ratings, ({ one }) => ({
+  business: one(businesses, {
+    fields: [ratings.businessId],
+    references: [businesses.id],
+  }),
+  user: one(users, {
+    fields: [ratings.userId],
     references: [users.id],
   }),
 }));
@@ -148,6 +173,13 @@ export const issueReportSchema = createInsertSchema(issueReports).omit({
   adminNotes: true,
 });
 
+// Rating schema
+export const ratingSchema = createInsertSchema(ratings).omit({
+  id: true, 
+  createdAt: true,
+  updatedAt: true,
+});
+
 // --------- TYPES ---------
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -157,3 +189,5 @@ export type BusinessHours = typeof businessHours.$inferSelect;
 export type InsertBusinessHours = z.infer<typeof businessHoursSchema>;
 export type IssueReport = typeof issueReports.$inferSelect;
 export type InsertIssueReport = z.infer<typeof issueReportSchema>;
+export type Rating = typeof ratings.$inferSelect;
+export type InsertRating = z.infer<typeof ratingSchema>;
