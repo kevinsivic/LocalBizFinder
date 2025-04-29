@@ -3,6 +3,30 @@
  * Can be used in both client and server environments
  */
 
+// Create a platform-agnostic fetch function
+// This approach avoids direct imports that might cause bundling issues
+const getFetch = (): any => {
+  // Use window.fetch in browser environments
+  if (typeof window !== 'undefined' && window.fetch) {
+    return window.fetch.bind(window);
+  }
+  
+  // Use node-fetch in Node.js environments
+  // This will only be executed in Node.js, not during client-side bundling
+  if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+    try {
+      // We use require instead of import to avoid bundling issues
+      // Using a string prevents bundlers from trying to resolve this at build time
+      return require('node-fetch');
+    } catch (e) {
+      console.error('Failed to load node-fetch:', e);
+      throw new Error('Could not load fetch implementation');
+    }
+  }
+  
+  throw new Error('No fetch implementation available');
+};
+
 // Function to convert an address string to latitude and longitude
 export async function geocodeAddress(address: string): Promise<{ lat: number, lon: number } | null> {
   try {
@@ -19,17 +43,9 @@ export async function geocodeAddress(address: string): Promise<{ lat: number, lo
       'Accept-Language': 'en'
     };
     
-    let response;
-    // Check if we're in a browser or Node environment
-    if (typeof window !== 'undefined') {
-      // Browser environment
-      response = await fetch(url, { headers });
-    } else {
-      // Node environment
-      // Using dynamic import to avoid issues with SSR
-      const nodeFetch = await import('node-fetch');
-      response = await nodeFetch.default(url, { headers });
-    }
+    // Get the appropriate fetch implementation
+    const fetchImplementation = getFetch();
+    const response = await fetchImplementation(url, { headers });
     
     if (!response.ok) {
       throw new Error(`Geocoding failed with status: ${response.status}`);
