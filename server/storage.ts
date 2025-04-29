@@ -1,11 +1,12 @@
 import { 
   users, type User, type InsertUser, 
   businesses, type Business, type InsertBusiness,
-  businessHours, type BusinessHours, type InsertBusinessHours
+  businessHours, type BusinessHours, type InsertBusinessHours,
+  issueReports, type IssueReport, type InsertIssueReport
 } from "@shared/schema";
 import session from "express-session";
 import { db, pool } from "./db";
-import { eq, and, between } from "drizzle-orm";
+import { eq, and, between, desc } from "drizzle-orm";
 import connectPg from "connect-pg-simple";
 
 const PostgresSessionStore = connectPg(session);
@@ -27,6 +28,14 @@ export interface IStorage {
   // Business hours methods
   getBusinessHours(businessId: number): Promise<BusinessHours[]>;
   setBusinessHours(hours: InsertBusinessHours[]): Promise<BusinessHours[]>;
+  
+  // Issue report methods
+  createIssueReport(report: InsertIssueReport): Promise<IssueReport>;
+  getIssueReportById(id: number): Promise<IssueReport | undefined>;
+  getIssueReportsByBusiness(businessId: number): Promise<IssueReport[]>;
+  getIssueReportsByUser(userId: number): Promise<IssueReport[]>;
+  getAllIssueReports(): Promise<IssueReport[]>;
+  updateIssueReport(id: number, update: Partial<IssueReport>): Promise<IssueReport>;
   
   // Session store
   sessionStore: any; // Using any type to avoid type issues with session store
