@@ -9,6 +9,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import IssueReportForm from "../issues/IssueReportForm";
 import IssueList from "../issues/IssueList";
+import { RatingForm } from "../ratings/RatingForm";
+import { RatingsList } from "../ratings/RatingsList";
+import { RatingDisplay } from "../ui/star-rating";
 
 import {
   Sheet,
@@ -429,7 +432,14 @@ const BusinessDetails = ({ business, isOpen, onClose }: BusinessDetailsProps) =>
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isIssuesVisible, setIsIssuesVisible] = useState(false);
+  const [isRatingsVisible, setIsRatingsVisible] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
+  
+  // Fetch average rating
+  const { data: ratingData } = useQuery<{ averageRating: number }>({
+    queryKey: [`/api/businesses/${business?.id}/average-rating`],
+    enabled: !!business?.id,
+  });
   
   const defaultImage = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
 
@@ -537,14 +547,12 @@ const BusinessDetails = ({ business, isOpen, onClose }: BusinessDetailsProps) =>
           <div className="px-6 pt-5 pb-6">
             <div className="flex justify-between items-start">
               <h2 className="text-xl font-bold text-neutral-900">{business.name}</h2>
-              <div className="flex items-center">
-                <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-                <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-                <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-                <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-                <Star className="h-4 w-4 text-amber-400" />
-                <span className="ml-1 text-sm text-neutral-600">4.5 (42)</span>
-              </div>
+              <RatingDisplay 
+                rating={ratingData?.averageRating || 0} 
+                showEmpty={true} 
+                className="cursor-pointer"
+                onClick={() => setIsRatingsVisible(!isRatingsVisible)}
+              />
             </div>
             
             <div className="mt-3 flex flex-wrap items-center text-sm text-neutral-600">
@@ -610,6 +618,44 @@ const BusinessDetails = ({ business, isOpen, onClose }: BusinessDetailsProps) =>
                     </>
                   )}
                 </Button>
+              </div>
+            )}
+          </div>
+          
+          {/* Ratings section */}
+          <div className="mt-4 border-t border-neutral-200 pt-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-neutral-900 flex items-center">
+                <Star className="h-4 w-4 mr-2 text-amber-500 fill-amber-500" />
+                Ratings & Reviews
+              </h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setIsRatingsVisible(!isRatingsVisible)}
+                className="text-xs"
+              >
+                {isRatingsVisible ? "Hide Reviews" : "View Reviews"}
+              </Button>
+            </div>
+            
+            {user && (
+              <div className="mt-4">
+                <RatingForm 
+                  businessId={business.id}
+                  businessName={business.name}
+                  onRatingSubmitted={() => {
+                    queryClient.invalidateQueries({ 
+                      queryKey: [`/api/businesses/${business.id}/average-rating`] 
+                    });
+                  }}
+                />
+              </div>
+            )}
+            
+            {isRatingsVisible && (
+              <div className="mt-4">
+                <RatingsList businessId={business.id} className="max-h-96 overflow-auto" />
               </div>
             )}
           </div>
