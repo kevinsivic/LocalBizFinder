@@ -58,10 +58,7 @@ const Header = () => {
                   About
                 </div>
               </Link>
-              <a href="#contact" className="border-transparent text-neutral-500 hover:border-neutral-300 hover:text-neutral-700 border-b-2 px-1 pt-1 inline-flex items-center text-sm font-medium">
-                Contact
-              </a>
-            </nav>
+              </nav>
           </div>
           
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
@@ -134,9 +131,6 @@ const Header = () => {
                       About
                     </div>
                   </Link>
-                  <a href="#contact" className="border-transparent text-neutral-500 hover:bg-neutral-50 hover:border-neutral-300 hover:text-neutral-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">
-                    Contact
-                  </a>
                 </nav>
                 <div className="mt-6 pt-6 border-t border-neutral-200">
                   {user ? (
