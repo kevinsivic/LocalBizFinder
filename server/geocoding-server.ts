@@ -1,14 +1,8 @@
 /**
- * Shared geocoding utility for converting addresses to coordinates
- * Can be used in both client and server environments
+ * Server-side implementation of geocoding functionality
  */
-
-// We use isomorphic fetch to handle both browser and Node.js environments
-// Browser has native fetch, Node.js needs node-fetch
-// The imports are conditionally handled at runtime
-
-// For TypeScript to be happy, we declare that we'll have a fetch function
-declare const fetch: (url: string, options?: any) => Promise<any>;
+import nodeFetch from 'node-fetch';
+import { log } from './vite';
 
 // Function to convert an address string to latitude and longitude
 export async function geocodeAddress(address: string): Promise<{ lat: number, lon: number } | null> {
@@ -26,8 +20,7 @@ export async function geocodeAddress(address: string): Promise<{ lat: number, lo
       'Accept-Language': 'en'
     };
     
-    // Use the appropriate fetch implementation based on environment
-    const response = await fetch(url, { headers });
+    const response = await nodeFetch(url, { headers });
     
     if (!response.ok) {
       throw new Error(`Geocoding failed with status: ${response.status}`);
@@ -36,7 +29,7 @@ export async function geocodeAddress(address: string): Promise<{ lat: number, lo
     const data = await response.json();
     
     if (!data || data.length === 0) {
-      console.warn(`No geocoding results found for address: ${address}`);
+      log(`No geocoding results found for address: ${address}`, 'geocoding');
       return null;
     }
     
@@ -45,28 +38,8 @@ export async function geocodeAddress(address: string): Promise<{ lat: number, lo
       lon: parseFloat(data[0].lon)
     };
   } catch (error) {
-    console.error("Geocoding error:", error);
+    log(`Geocoding error: ${error}`, 'geocoding');
     return null;
-  }
-}
-
-// Fallback function that uses default coordinates when geocoding fails
-export async function geocodeAddressWithFallback(
-  address: string,
-  fallbackLat = 45.5202, // Default to Portland, OR coordinates 
-  fallbackLon = -122.6742
-): Promise<{ lat: number, lon: number }> {
-  try {
-    const result = await geocodeAddress(address);
-    if (result) {
-      return result;
-    }
-    
-    console.warn(`Using fallback coordinates for address: ${address}`);
-    return { lat: fallbackLat, lon: fallbackLon };
-  } catch (error) {
-    console.error("Geocoding error with fallback:", error);
-    return { lat: fallbackLat, lon: fallbackLon };
   }
 }
 
@@ -95,11 +68,31 @@ export async function geocodeAddressWithRetry(
         return result;
       }
     } catch (error) {
-      console.error(`Geocoding attempt ${attempt + 1} failed:`, error);
+      log(`Geocoding attempt ${attempt + 1} failed: ${error}`, 'geocoding');
       lastError = error;
     }
   }
   
-  console.error(`Geocoding failed after ${retries} attempts for address: ${address}`);
+  log(`Geocoding failed after ${retries} attempts for address: ${address}`, 'geocoding');
   return null;
+}
+
+// Fallback function that uses default coordinates when geocoding fails
+export async function geocodeAddressWithFallback(
+  address: string,
+  fallbackLat = 45.5202, // Default to Portland, OR coordinates 
+  fallbackLon = -122.6742
+): Promise<{ lat: number, lon: number }> {
+  try {
+    const result = await geocodeAddress(address);
+    if (result) {
+      return result;
+    }
+    
+    log(`Using fallback coordinates for address: ${address}`, 'geocoding');
+    return { lat: fallbackLat, lon: fallbackLon };
+  } catch (error) {
+    log(`Geocoding error with fallback: ${error}`, 'geocoding');
+    return { lat: fallbackLat, lon: fallbackLon };
+  }
 }

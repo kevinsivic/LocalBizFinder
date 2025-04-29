@@ -1,14 +1,6 @@
 /**
- * Shared geocoding utility for converting addresses to coordinates
- * Can be used in both client and server environments
+ * Client-side implementation of geocoding functionality
  */
-
-// We use isomorphic fetch to handle both browser and Node.js environments
-// Browser has native fetch, Node.js needs node-fetch
-// The imports are conditionally handled at runtime
-
-// For TypeScript to be happy, we declare that we'll have a fetch function
-declare const fetch: (url: string, options?: any) => Promise<any>;
 
 // Function to convert an address string to latitude and longitude
 export async function geocodeAddress(address: string): Promise<{ lat: number, lon: number } | null> {
@@ -26,7 +18,6 @@ export async function geocodeAddress(address: string): Promise<{ lat: number, lo
       'Accept-Language': 'en'
     };
     
-    // Use the appropriate fetch implementation based on environment
     const response = await fetch(url, { headers });
     
     if (!response.ok) {
@@ -47,26 +38,6 @@ export async function geocodeAddress(address: string): Promise<{ lat: number, lo
   } catch (error) {
     console.error("Geocoding error:", error);
     return null;
-  }
-}
-
-// Fallback function that uses default coordinates when geocoding fails
-export async function geocodeAddressWithFallback(
-  address: string,
-  fallbackLat = 45.5202, // Default to Portland, OR coordinates 
-  fallbackLon = -122.6742
-): Promise<{ lat: number, lon: number }> {
-  try {
-    const result = await geocodeAddress(address);
-    if (result) {
-      return result;
-    }
-    
-    console.warn(`Using fallback coordinates for address: ${address}`);
-    return { lat: fallbackLat, lon: fallbackLon };
-  } catch (error) {
-    console.error("Geocoding error with fallback:", error);
-    return { lat: fallbackLat, lon: fallbackLon };
   }
 }
 
@@ -102,4 +73,24 @@ export async function geocodeAddressWithRetry(
   
   console.error(`Geocoding failed after ${retries} attempts for address: ${address}`);
   return null;
+}
+
+// Fallback function that uses default coordinates when geocoding fails
+export async function geocodeAddressWithFallback(
+  address: string,
+  fallbackLat = 45.5202, // Default to Portland, OR coordinates 
+  fallbackLon = -122.6742
+): Promise<{ lat: number, lon: number }> {
+  try {
+    const result = await geocodeAddress(address);
+    if (result) {
+      return result;
+    }
+    
+    console.warn(`Using fallback coordinates for address: ${address}`);
+    return { lat: fallbackLat, lon: fallbackLon };
+  } catch (error) {
+    console.error("Geocoding error with fallback:", error);
+    return { lat: fallbackLat, lon: fallbackLon };
+  }
 }

@@ -51,8 +51,8 @@ const extendedBusinessSchema = insertBusinessSchema.extend({
 
 type FormValues = z.infer<typeof extendedBusinessSchema>;
 
-// Import geocoding function from shared library
-import { geocodeAddress } from "@shared/geocoding";
+// Import geocoding function from client library
+import { geocodeAddress } from "@/lib/geocoding-client";
 
 const BusinessForm = ({ isOpen, onClose }: BusinessFormProps) => {
   const { user } = useAuth();

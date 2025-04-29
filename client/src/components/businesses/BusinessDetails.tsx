@@ -73,8 +73,8 @@ const editBusinessSchema = z.object({
 
 type EditFormValues = z.infer<typeof editBusinessSchema>;
 
-// Import geocoding function from shared library
-import { geocodeAddress } from "@shared/geocoding";
+// Import geocoding function from client library
+import { geocodeAddress } from "@/lib/geocoding-client";
 
 const EditBusinessForm = ({ business, onClose }: EditBusinessFormProps) => {
   const { toast } = useToast();

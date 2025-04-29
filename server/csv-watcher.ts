@@ -5,7 +5,7 @@ import csvParser from 'csv-parser';
 import { db } from './db';
 import { businesses, insertBusinessSchema } from '@shared/schema';
 import { log } from './vite';
-import { geocodeAddressWithRetry, geocodeAddressWithFallback } from '@shared/geocoding';
+import { geocodeAddressWithRetry, geocodeAddressWithFallback } from './geocoding-server';
 
 // Directory to watch for CSV files
 const CSV_DIRECTORY = path.resolve('./data/csv');
