@@ -417,26 +417,7 @@ const EditBusinessForm = ({ business, onClose }: EditBusinessFormProps) => {
         <DialogFooter className="gap-2 sm:gap-0 mt-6">
           <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>
           <Button 
-            type="button" 
-            onClick={() => {
-              console.log("Manual submit button clicked");
-              // Skip validation and just submit the current form values
-              const values = form.getValues();
-              console.log("Form values:", values);
-              
-              // Force setting the createdBy field which might be missing
-              updateBusinessMutation.mutate({
-                ...values,
-                createdBy: business.createdBy,
-                // Ensure these are properly handled as strings or null
-                phone: values.phone || null,
-                website: values.website || null,
-                imageUrl: values.imageUrl || null,
-                // Make sure coordinates are numbers
-                latitude: typeof values.latitude === 'string' ? parseFloat(values.latitude) : values.latitude,
-                longitude: typeof values.longitude === 'string' ? parseFloat(values.longitude) : values.longitude,
-              } as EditFormValues);
-            }}
+            type="submit" 
             disabled={updateBusinessMutation.isPending}
           >
             {updateBusinessMutation.isPending ? (
