@@ -112,6 +112,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       console.log("Updating business data:", req.body);
+      console.log("Business ID:", id);
+      console.log("User:", req.user);
       
       // Sanitize input
       const businessInput: Record<string, any> = {
@@ -119,21 +121,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: req.body.description,
         category: req.body.category,
         address: req.body.address,
-        latitude: parseFloat(req.body.latitude),
-        longitude: parseFloat(req.body.longitude),
+        latitude: typeof req.body.latitude === 'string' ? parseFloat(req.body.latitude) : req.body.latitude,
+        longitude: typeof req.body.longitude === 'string' ? parseFloat(req.body.longitude) : req.body.longitude,
         createdBy: business.createdBy, // Preserve original creator
       };
       
       // Add optional fields if present
-      if (req.body.phone) businessInput.phone = req.body.phone;
-      if (req.body.website) businessInput.website = req.body.website;
-      if (req.body.imageUrl) businessInput.imageUrl = req.body.imageUrl;
+      if (req.body.phone !== undefined) businessInput.phone = req.body.phone || null;
+      if (req.body.website !== undefined) businessInput.website = req.body.website || null;
+      if (req.body.imageUrl !== undefined) businessInput.imageUrl = req.body.imageUrl || null;
+      
+      // Print raw input for debugging
+      console.log("Business input before validation:", businessInput);
       
       // Validate with Zod
-      const businessData = insertBusinessSchema.parse(businessInput);
-      const updatedBusiness = await storage.updateBusiness(id, businessData);
-      
-      res.json(updatedBusiness);
+      try {
+        const businessData = insertBusinessSchema.parse(businessInput);
+        console.log("Validated business data:", businessData);
+        const updatedBusiness = await storage.updateBusiness(id, businessData);
+        console.log("Updated business result:", updatedBusiness);
+        return res.json(updatedBusiness);
+      } catch (validationError) {
+        console.error("Validation error:", validationError);
+        return res.status(400).json({ 
+          message: "Invalid business data", 
+          errors: validationError instanceof ZodError ? validationError.errors : "Unknown validation error" 
+        });
+      }
     } catch (error) {
       console.error("Error updating business:", error);
       if (error instanceof ZodError) {

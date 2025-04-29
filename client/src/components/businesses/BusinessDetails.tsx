@@ -158,8 +158,11 @@ const EditBusinessForm = ({ business, onClose }: EditBusinessFormProps) => {
 
   const updateBusinessMutation = useMutation({
     mutationFn: async (data: EditFormValues) => {
+      console.log("Updating business:", business.id, data);
       const response = await apiRequest("PUT", `/api/businesses/${business.id}`, data);
-      return response.json();
+      const result = await response.json();
+      console.log("Update response:", result);
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/businesses"] });
@@ -179,26 +182,23 @@ const EditBusinessForm = ({ business, onClose }: EditBusinessFormProps) => {
   });
 
   const onSubmit = (data: EditFormValues) => {
+    // Log form errors to help debug any validation issues
+    console.log("Form errors:", form.formState.errors);
+    console.log("Submitting form data:", data);
+    
     // Ensure latitude and longitude are numbers
     const formattedData = {
       ...data,
       latitude: typeof data.latitude === 'string' ? parseFloat(data.latitude) : data.latitude,
       longitude: typeof data.longitude === 'string' ? parseFloat(data.longitude) : data.longitude,
+      // Include optional fields with null values for proper API handling
+      phone: data.phone || null,
+      website: data.website || null,
+      imageUrl: data.imageUrl || null
     };
     
-    // Handle optional fields: remove empty strings instead of setting to null
-    const finalData = Object.fromEntries(
-      Object.entries(formattedData).filter(([key, value]) => {
-        // Keep required fields even if they're empty (although they shouldn't be due to validation)
-        if (['name', 'description', 'category', 'address', 'latitude', 'longitude'].includes(key)) {
-          return true;
-        }
-        // Filter out empty optional fields
-        return value !== "" && value !== null && value !== undefined;
-      })
-    );
-    
-    updateBusinessMutation.mutate(finalData as EditFormValues);
+    console.log("Formatted data:", formattedData);
+    updateBusinessMutation.mutate(formattedData as EditFormValues);
   };
 
   return (
