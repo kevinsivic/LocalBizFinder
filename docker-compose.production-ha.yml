@@ -26,7 +26,7 @@ services:
           memory: 1G
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/localspot
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/localspot
       - SESSION_SECRET=${SESSION_SECRET}
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -257,5 +257,7 @@ volumes:
 
 networks:
   localspot-network:
+  # The traefik-public network must be created before deploying:
+  # docker network create --driver=overlay --attachable traefik-public
   traefik-public:
     external: true
