@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import IssueList from "@/components/issues/IssueList";
+import IssueDetailsDialog from "@/components/issues/IssueDetailsDialog";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 
@@ -32,6 +33,7 @@ export default function IssuesPage() {
   const { toast } = useToast();
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedIssue, setSelectedIssue] = useState<IssueReport | null>(null);
   
   const [, setLocation] = useLocation();
   
@@ -242,13 +244,7 @@ export default function IssuesPage() {
                       variant="outline" 
                       size="sm"
                       className="h-8"
-                      onClick={() => {
-                        // Future implementation: open a modal to view details and update
-                        toast({
-                          title: "View Details",
-                          description: `Viewing details for issue #${issue.id}`,
-                        });
-                      }}
+                      onClick={() => setSelectedIssue(issue)}
                     >
                       View Details
                     </Button>
@@ -279,6 +275,16 @@ export default function IssuesPage() {
             </Button>
           )}
         </div>
+      )}
+      
+      {/* Issue details dialog */}
+      {selectedIssue && (
+        <IssueDetailsDialog
+          issue={selectedIssue}
+          isOpen={!!selectedIssue}
+          onClose={() => setSelectedIssue(null)}
+          businessName={getBusinessName(selectedIssue.businessId)}
+        />
       )}
     </div>
   );
