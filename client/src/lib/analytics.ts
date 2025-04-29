@@ -41,12 +41,17 @@ export enum AnalyticsEvent {
 
 // Initialize Swetrix with project ID from environment variables
 const projectId = import.meta.env.SWETRIX_PROJECT_ID as string;
+const customServerUrl = 'https://track.jemsoftware.co/';
 
 // Only initialize in production or if project ID exists
 const shouldInitialize = projectId && (import.meta.env.PROD || import.meta.env.DEV);
 
 if (shouldInitialize) {
-  Swetrix.init(projectId);
+  // Initialize with custom server URL
+  Swetrix.init(projectId, {
+    apiURL: customServerUrl
+  });
+  console.debug(`[Analytics] Initialized with custom server: ${customServerUrl}`);
   Swetrix.trackViews();
 }
 
@@ -74,6 +79,7 @@ export const trackPageView = (path: string) => {
   if (!shouldInitialize || !path) return;
   
   try {
+    // Use the path for tracking with the custom server
     Swetrix.trackPageview(path);
     console.debug(`[Analytics] Tracked page view: ${path}`);
   } catch (error) {
