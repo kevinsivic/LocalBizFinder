@@ -60,8 +60,8 @@ RUN npm run build
 # Production runtime stage - minimal image with only what's needed
 FROM base AS production
 
-# Install only production dependencies
-RUN npm ci --production
+# Install production dependencies and drizzle-kit for migrations
+RUN npm ci --production && npm install drizzle-kit
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/
