@@ -26,7 +26,16 @@ wait_for_db() {
 run_migrations() {
   echo "🔄 Running database migrations with Drizzle..."
   
-  if npx drizzle-kit push:pg; then
+  # Generate migration directory if it doesn't exist
+  mkdir -p ./migrations
+  
+  # Generate migration files from schema
+  echo "🔄 Generating migration files..."
+  npx drizzle-kit generate:pg
+  
+  # Push schema changes to database
+  echo "🔄 Applying schema changes to database..."
+  if npx drizzle-kit push; then
     echo "✅ Database migrations completed successfully."
   else
     echo "❌ Database migration failed."
@@ -35,6 +44,9 @@ run_migrations() {
       exit 1
     else
       echo "⚠️ Development environment - continuing despite migration errors."
+      echo "🔧 Attempting to initialize database manually..."
+      # Use the custom initialization script
+      node server/init-db.js
     fi
   fi
 }

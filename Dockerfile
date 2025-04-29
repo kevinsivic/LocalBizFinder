@@ -52,6 +52,9 @@ RUN npm ci
 COPY . .
 
 # Build the application
+# First ensure the client directory exists
+RUN mkdir -p ./client/dist
+# Build the frontend and backend
 RUN npm run build
 
 # Production runtime stage - minimal image with only what's needed
@@ -65,8 +68,8 @@ COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Copy built application from build stage
+COPY --from=build /app/dist ./dist
 COPY --from=build /app/client/dist ./client/dist
-COPY --from=build /app/server ./server
 COPY --from=build /app/shared ./shared
 COPY --from=build /app/drizzle.config.ts ./
 
@@ -85,4 +88,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 ENTRYPOINT ["docker-entrypoint.sh"]
 
 # Start the application in production mode
-CMD ["node", "server/index.js"]
+CMD ["node", "dist/index.js"]
