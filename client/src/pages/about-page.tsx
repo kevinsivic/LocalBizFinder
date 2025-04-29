@@ -1,3 +1,4 @@
+
 import { ArrowLeft, Store, Coffee, Book, MapPin, Heart, ShoppingBag, MessageSquare, LocateFixed, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -24,10 +25,10 @@ const AboutPage = () => {
                 <Store className="h-8 w-8 text-primary" />
               </div>
               <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground">
-                About LocalSpot
+                Welcome to LocalSpot
               </h1>
               <p className="text-lg text-muted-foreground max-w-[700px] mx-auto">
-                Discover and support the local businesses that make our community unique.
+                Your digital compass for discovering authentic local businesses that make our community vibrant and unique.
               </p>
             </div>
           </div>
@@ -40,31 +41,28 @@ const AboutPage = () => {
               <div className="space-y-4">
                 <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Our Mission</h2>
                 <p className="text-lg text-muted-foreground">
-                  LocalSpot was created to improve visibility and accessibility of locally owned businesses 
-                  and help people figure out where to buy things locally rather than from Amazon or big box stores.
+                  We're on a mission to strengthen local economies by connecting community members with independently owned businesses. LocalSpot makes it effortless to discover and support the shops, restaurants, and services that give our neighborhoods their unique character.
                 </p>
                 <p className="text-muted-foreground">
-                  In a world dominated by online marketplaces and chain retailers, it's becoming harder to discover 
-                  the unique local businesses in our communities. We believe that supporting local businesses creates 
-                  stronger communities, more diverse economies, and a more sustainable future.
+                  By choosing local businesses, you're not just making a purchase – you're investing in your community's future, supporting local jobs, and helping preserve the distinct charm of our neighborhoods.
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-primary-50 p-6 rounded-lg flex flex-col items-center text-center">
                   <Coffee className="h-10 w-10 text-primary mb-3" />
-                  <h3 className="font-medium">Local Cafés</h3>
+                  <h3 className="font-medium">Discover Cafés</h3>
                 </div>
                 <div className="bg-primary-50 p-6 rounded-lg flex flex-col items-center text-center">
                   <Book className="h-10 w-10 text-primary mb-3" />
-                  <h3 className="font-medium">Bookstores</h3>
+                  <h3 className="font-medium">Local Bookshops</h3>
                 </div>
                 <div className="bg-primary-50 p-6 rounded-lg flex flex-col items-center text-center">
                   <ShoppingBag className="h-10 w-10 text-primary mb-3" />
-                  <h3 className="font-medium">Retailers</h3>
+                  <h3 className="font-medium">Independent Stores</h3>
                 </div>
                 <div className="bg-primary-50 p-6 rounded-lg flex flex-col items-center text-center">
                   <Heart className="h-10 w-10 text-primary mb-3" />
-                  <h3 className="font-medium">Community</h3>
+                  <h3 className="font-medium">Support Local</h3>
                 </div>
               </div>
             </div>
@@ -75,20 +73,19 @@ const AboutPage = () => {
         <section className="py-12 md:py-16">
           <div className="container px-4 md:px-6">
             <div className="text-center mb-10">
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tight">How LocalSpot Works</h2>
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Explore With Ease</h2>
               <p className="text-muted-foreground mt-4 max-w-[700px] mx-auto">
-                We're making it easier than ever to discover local businesses around you.
+                We've designed LocalSpot to make discovering and connecting with local businesses seamless and enjoyable.
               </p>
             </div>
-            
             <div className="grid md:grid-cols-3 gap-8">
               <div className="flex flex-col items-center text-center space-y-3">
                 <div className="bg-primary/10 p-3 rounded-full">
                   <MapPin className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-medium">Interactive Map</h3>
+                <h3 className="text-xl font-medium">Smart Mapping</h3>
                 <p className="text-muted-foreground">
-                  Explore businesses on our map interface to find what's near you or in areas you're visiting.
+                  Discover local gems with our intuitive map interface, perfect for both neighborhood exploration and travel planning.
                 </p>
               </div>
               
@@ -96,9 +93,9 @@ const AboutPage = () => {
                 <div className="bg-primary/10 p-3 rounded-full">
                   <LocateFixed className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-medium">Location-Based</h3>
+                <h3 className="text-xl font-medium">Precise Location Search</h3>
                 <p className="text-muted-foreground">
-                  Find local businesses based on your current location or search in specific neighborhoods.
+                  Find businesses exactly where you need them, whether it's right around the corner or in a specific neighborhood.
                 </p>
               </div>
               
@@ -106,9 +103,9 @@ const AboutPage = () => {
                 <div className="bg-primary/10 p-3 rounded-full">
                   <Compass className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-medium">Category Filters</h3>
+                <h3 className="text-xl font-medium">Smart Categories</h3>
                 <p className="text-muted-foreground">
-                  Filter businesses by category to find exactly what you're looking for, from cafés to bookstores.
+                  Quickly find what you need with our curated business categories, from artisanal coffee shops to specialty boutiques.
                 </p>
               </div>
             </div>
@@ -121,18 +118,17 @@ const AboutPage = () => {
             <div className="flex flex-col items-center text-center space-y-4">
               <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Join Our Community</h2>
               <p className="text-muted-foreground max-w-[700px]">
-                LocalSpot is more than just a directory—it's a community of people who believe in supporting local businesses.
-                Whether you're a business owner or a conscious consumer, we welcome you to join us.
+                LocalSpot is built on the power of community connections. Whether you're a business owner ready to reach more customers or a community member passionate about supporting local businesses, there's a place for you here.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mt-4">
                 <Link href="/auth">
                   <Button className="w-full sm:w-auto">
-                    Sign Up Now
+                    Get Started
                   </Button>
                 </Link>
                 <Link href="/">
                   <Button variant="outline" className="w-full sm:w-auto">
-                    Explore Businesses
+                    Browse Businesses
                   </Button>
                 </Link>
               </div>
@@ -148,11 +144,11 @@ const AboutPage = () => {
             <div>
               <div className="text-2xl font-bold">LocalSpot</div>
               <p className="text-muted-foreground mt-2">
-                Connecting communities to local businesses.
+                Building stronger communities through local commerce.
               </p>
             </div>
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Links</h3>
+              <h3 className="text-lg font-medium">Quick Links</h3>
               <ul className="space-y-2">
                 <li>
                   <Link href="/">
@@ -172,9 +168,9 @@ const AboutPage = () => {
               </ul>
             </div>
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Contact</h3>
+              <h3 className="text-lg font-medium">Get in Touch</h3>
               <p className="text-muted-foreground">
-                For any questions or feedback, please reach out to us.
+                Have questions or suggestions? We'd love to hear from you.
               </p>
               <Button variant="outline" className="gap-2">
                 <MessageSquare className="h-4 w-4" />
