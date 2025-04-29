@@ -93,12 +93,16 @@ This will build an optimized production image with smaller size and better secur
 
 ### Deployment
 
+There are two main deployment options: standard production and high-availability (HA) production.
+
+#### Regular Production Deployment
+
 For deploying to a production server:
 
 1. Install Docker and Docker Compose on your server.
 
 2. Copy the following files to your server:
-   - `Dockerfile.production`
+   - `Dockerfile`
    - `docker-compose.production.yml`
    - `docker-entrypoint.sh`
    - `.env` (with your production settings)
@@ -136,6 +140,66 @@ server {
 ```
 
 5. Use a tool like Certbot to set up SSL for your domain.
+
+#### High-Availability Production Deployment
+
+For deploying a scalable, high-availability production environment:
+
+1. Set up a Docker Swarm cluster:
+
+```bash
+# Initialize Docker Swarm on the manager node
+docker swarm init --advertise-addr <MANAGER-IP>
+
+# Join worker nodes to the swarm
+docker swarm join --token <TOKEN> <MANAGER-IP>:2377
+```
+
+2. Create the required external network:
+
+```bash
+# Create Traefik public network
+docker network create --driver=overlay --attachable traefik-public
+```
+
+3. Create an `.env` file with all required variables:
+
+```
+POSTGRES_PASSWORD=secure_password
+SESSION_SECRET=secure_session_secret
+DOMAIN=yourdomain.com
+ACME_EMAIL=your@email.com
+TRAEFIK_AUTH=admin:hashed_password
+PROMETHEUS_AUTH=admin:hashed_password
+GRAFANA_PASSWORD=secure_password
+REGISTRY=registry.example.com
+REPOSITORY=yourorg/localspot
+TAG=latest
+```
+
+4. Deploy the high-availability stack:
+
+```bash
+docker-compose -f docker-compose.production-ha.yml up -d
+```
+
+This will deploy the full stack with:
+- Multiple app instances with load balancing
+- PostgreSQL database
+- Redis for session storage
+- Traefik reverse proxy with automatic SSL (no need for Nginx)
+- Prometheus for monitoring
+- Grafana for dashboards
+- Node exporter and cAdvisor for system metrics
+- Automated database backups
+
+5. Access your deployment:
+   - Application: https://yourdomain.com
+   - Traefik Dashboard: https://traefik.yourdomain.com (protected by HTTP basic auth)
+   - Prometheus Metrics: https://monitoring.yourdomain.com (protected by HTTP basic auth)
+   - Grafana Dashboards: https://grafana.yourdomain.com (admin/password from your env file)
+
+   SSL certificates are automatically handled by Traefik via Let's Encrypt.
 
 6. For automatic deployment, a GitHub Actions workflow is already set up in `.github/workflows/docker-image.yml`. You'll need to:
 
@@ -223,13 +287,32 @@ When developing with Docker, you can take advantage of the live-reload capabilit
 
 ### Environment Variables
 
-The following environment variables are required:
+#### Core Variables
+
+These variables are required for all deployment types:
 
 - `NODE_ENV`: Set to 'development' or 'production'
-- `DATABASE_URL`: PostgreSQL connection string
-- `SESSION_SECRET`: Secret for session management
+- `DATABASE_URL`: PostgreSQL connection string (format: `postgresql://username:password@host:port/database`)
+- `SESSION_SECRET`: Secret for session management (use a strong random string)
+- `POSTGRES_USER`: PostgreSQL username
+- `POSTGRES_PASSWORD`: PostgreSQL password
+- `POSTGRES_DB`: PostgreSQL database name
 
-For local development, these are set in the docker-compose.yml file.
+#### High-Availability Deployment Variables
+
+Additional variables needed for the high-availability setup:
+
+- `DOMAIN`: Your domain name (e.g., `example.com`)
+- `ACME_EMAIL`: Email address for Let's Encrypt certificates
+- `TRAEFIK_AUTH`: HTTP Basic Auth credentials for Traefik dashboard (generated with `htpasswd`)
+- `PROMETHEUS_AUTH`: HTTP Basic Auth credentials for Prometheus (generated with `htpasswd`)
+- `GRAFANA_PASSWORD`: Password for Grafana admin user
+- `REGISTRY`: Docker registry URL (optional, for CI/CD)
+- `REPOSITORY`: Docker repository name (optional, for CI/CD)
+- `TAG`: Docker image tag (optional, for CI/CD)
+- `REDIS_URL`: Redis connection string (automatically set by the compose file)
+
+For local development, the core variables are set in the `docker-compose.yml` file.
 
 ### Database
 
