@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { categories, insertBusinessSchema } from "@shared/schema";
+import { categories, insertBusinessSchema, issueTypes, type IssueReport } from "@shared/schema";
 import { ZodError } from "zod";
 
 // Authorization middleware
@@ -174,6 +174,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get categories
   app.get("/api/categories", (req, res) => {
     res.json(categories);
+  });
+
+  // Get issue types (public)
+  app.get("/api/issue-types", (req, res) => {
+    res.json(issueTypes);
+  });
+  
+  // Issue Reports APIs
+  // Get all issue reports (admin only)
+  app.get("/api/issues", requireAdmin, async (req, res) => {
+    try {
+      const issues = await storage.getAllIssueReports();
+      res.json(issues);
+    } catch (error) {
+      console.error("Error fetching issue reports:", error);
+      res.status(500).send("Failed to fetch issue reports");
+    }
+  });
+  
+  // Get issues for a specific business
+  app.get("/api/businesses/:id/issues", requireAuth, async (req, res) => {
+    const businessId = parseInt(req.params.id);
+    if (isNaN(businessId)) {
+      return res.status(400).send("Invalid business ID");
+    }
+
+    try {
+      const business = await storage.getBusinessById(businessId);
+      if (!business) {
+        return res.status(404).send("Business not found");
+      }
+
+      // Regular users can only see issues they reported, admins can see all
+      if (!req.user?.isAdmin) {
+        const issues = await storage.getIssueReportsByUser(req.user?.id);
+        const filteredIssues = issues.filter(issue => issue.businessId === businessId);
+        return res.json(filteredIssues);
+      }
+
+      const issues = await storage.getIssueReportsByBusiness(businessId);
+      res.json(issues);
+    } catch (error) {
+      console.error("Error fetching business issues:", error);
+      res.status(500).send("Failed to fetch business issues");
+    }
+  });
+  
+  // Create a new issue report
+  app.post("/api/businesses/:id/issues", requireAuth, async (req, res) => {
+    const businessId = parseInt(req.params.id);
+    if (isNaN(businessId)) {
+      return res.status(400).send("Invalid business ID");
+    }
+
+    try {
+      const business = await storage.getBusinessById(businessId);
+      if (!business) {
+        return res.status(404).send("Business not found");
+      }
+
+      const { issueType, description } = req.body;
+      
+      if (!issueType || !description) {
+        return res.status(400).send("Issue type and description are required");
+      }
+
+      const report = {
+        businessId,
+        reportedBy: req.user!.id,
+        issueType,
+        description
+      };
+
+      const newReport = await storage.createIssueReport(report);
+      res.status(201).json(newReport);
+    } catch (error) {
+      console.error("Error creating issue report:", error);
+      res.status(500).send("Failed to create issue report");
+    }
+  });
+  
+  // Update an issue report (admin only)
+  app.patch("/api/issues/:id", requireAdmin, async (req, res) => {
+    const issueId = parseInt(req.params.id);
+    if (isNaN(issueId)) {
+      return res.status(400).send("Invalid issue ID");
+    }
+
+    try {
+      const issue = await storage.getIssueReportById(issueId);
+      if (!issue) {
+        return res.status(404).send("Issue report not found");
+      }
+
+      const { status, adminNotes } = req.body;
+      
+      // Only allow updating status and admin notes
+      const updates: Partial<IssueReport> = {};
+      
+      if (status) {
+        updates.status = status;
+      }
+      
+      if (adminNotes) {
+        updates.adminNotes = adminNotes;
+      }
+      
+      // If resolving the issue, set resolvedBy
+      if (status === 'resolved') {
+        updates.resolvedBy = req.user!.id;
+      }
+
+      const updatedIssue = await storage.updateIssueReport(issueId, updates);
+      res.json(updatedIssue);
+    } catch (error) {
+      console.error("Error updating issue report:", error);
+      res.status(500).send("Failed to update issue report");
+    }
   });
 
   // Health check endpoint for Docker

@@ -147,6 +147,66 @@ export class DatabaseStorage implements IStorage {
       .values(hours)
       .returning();
   }
+  
+  // Issue report methods
+  async createIssueReport(report: InsertIssueReport): Promise<IssueReport> {
+    const [newReport] = await db
+      .insert(issueReports)
+      .values(report)
+      .returning();
+    return newReport;
+  }
+  
+  async getIssueReportById(id: number): Promise<IssueReport | undefined> {
+    const [report] = await db
+      .select()
+      .from(issueReports)
+      .where(eq(issueReports.id, id));
+    return report;
+  }
+  
+  async getIssueReportsByBusiness(businessId: number): Promise<IssueReport[]> {
+    return db
+      .select()
+      .from(issueReports)
+      .where(eq(issueReports.businessId, businessId))
+      .orderBy(desc(issueReports.createdAt));
+  }
+  
+  async getIssueReportsByUser(userId: number): Promise<IssueReport[]> {
+    return db
+      .select()
+      .from(issueReports)
+      .where(eq(issueReports.reportedBy, userId))
+      .orderBy(desc(issueReports.createdAt));
+  }
+  
+  async getAllIssueReports(): Promise<IssueReport[]> {
+    return db
+      .select()
+      .from(issueReports)
+      .orderBy(desc(issueReports.createdAt));
+  }
+  
+  async updateIssueReport(id: number, update: Partial<IssueReport>): Promise<IssueReport> {
+    // Ensure updatedAt is set to current time
+    const dataToUpdate = {
+      ...update,
+      updatedAt: new Date()
+    };
+    
+    const [updatedReport] = await db
+      .update(issueReports)
+      .set(dataToUpdate)
+      .where(eq(issueReports.id, id))
+      .returning();
+      
+    if (!updatedReport) {
+      throw new Error(`Issue report with id ${id} not found`);
+    }
+    
+    return updatedReport;
+  }
 
   private async initializeDatabase() {
     // Check if we need to initialize the database with sample data
