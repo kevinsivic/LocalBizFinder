@@ -72,6 +72,8 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/client/dist ./client/dist
 COPY --from=build /app/shared ./shared
 COPY --from=build /app/drizzle.config.ts ./
+COPY --from=build /app/server/init-db.js ./server/
+COPY --from=build /app/migrations ./migrations
 
 # Set environment variables
 ENV NODE_ENV=production
