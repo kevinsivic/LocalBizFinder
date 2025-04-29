@@ -50,7 +50,9 @@ import {
   Edit, 
   Trash2,
   X,
-  Loader2 
+  Loader2,
+  AlertTriangle,
+  Flag
 } from "lucide-react";
 
 // EditBusinessForm component
@@ -425,6 +427,8 @@ const BusinessDetails = ({ business, isOpen, onClose }: BusinessDetailsProps) =>
   const { toast } = useToast();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [isIssuesVisible, setIsIssuesVisible] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   
   const defaultImage = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
@@ -610,6 +614,46 @@ const BusinessDetails = ({ business, isOpen, onClose }: BusinessDetailsProps) =>
             )}
           </div>
           
+          {/* Issue reporting section */}
+          {user && (
+            <div className="mt-4 border-t border-neutral-200 pt-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium text-neutral-900 flex items-center">
+                  <Flag className="h-4 w-4 mr-2 text-amber-500" />
+                  Report an Issue
+                </h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsIssuesVisible(!isIssuesVisible)}
+                  className="text-xs"
+                >
+                  {isIssuesVisible ? "Hide Issues" : "View Issues"}
+                </Button>
+              </div>
+              
+              <p className="mt-2 text-sm text-neutral-600">
+                Found incorrect information or a problem with this listing?
+              </p>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2"
+                onClick={() => setIsReportDialogOpen(true)}
+              >
+                <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
+                Report Issue
+              </Button>
+              
+              {isIssuesVisible && (
+                <div className="mt-4">
+                  <IssueList businessId={business.id} className="max-h-64 overflow-auto" />
+                </div>
+              )}
+            </div>
+          )}
+          
           <div className="mt-auto border-t border-neutral-200 px-6 py-4">
             <div className="flex flex-col sm:flex-row sm:justify-between space-y-3 sm:space-y-0">
               <Button className="justify-center items-center" onClick={handleGetDirections}>
@@ -687,6 +731,15 @@ const BusinessDetails = ({ business, isOpen, onClose }: BusinessDetailsProps) =>
           )}
         </DialogContent>
       </Dialog>
+      
+      {/* Issue Report Dialog */}
+      {isReportDialogOpen && (
+        <IssueReportForm
+          business={business}
+          isOpen={isReportDialogOpen}
+          onClose={() => setIsReportDialogOpen(false)}
+        />
+      )}
     </>
   );
 };

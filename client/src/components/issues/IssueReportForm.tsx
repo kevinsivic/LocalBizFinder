@@ -54,7 +54,7 @@ export default function IssueReportForm({ business, isOpen, onClose }: IssueRepo
   const queryClient = useQueryClient();
   
   // Get issue types
-  const { data: issueTypes, isLoading: isLoadingTypes } = useQuery({
+  const { data: issueTypes = [], isLoading: isLoadingTypes } = useQuery<string[]>({
     queryKey: ["/api/issue-types"],
     staleTime: 1000 * 60 * 60, // Cache for 1 hour
   });
