@@ -387,8 +387,50 @@ const BusinessForm = ({ isOpen, onClose }: BusinessFormProps) => {
                 </Button>
               ) : (
                 <Button 
-                  type="submit" 
+                  type="button" 
                   disabled={createBusinessMutation.isPending}
+                  onClick={() => {
+                    // Get form data
+                    const data = form.getValues();
+                    console.log("Submitting business data:", data);
+                    
+                    // Ensure latitude and longitude are numbers
+                    const formattedData = {
+                      ...data,
+                      latitude: typeof data.latitude === 'string' ? parseFloat(data.latitude) : data.latitude,
+                      longitude: typeof data.longitude === 'string' ? parseFloat(data.longitude) : data.longitude,
+                    };
+                    
+                    // Validate location fields
+                    const errors = [];
+                    if (isNaN(formattedData.latitude)) {
+                      errors.push("Latitude must be a valid number");
+                    }
+                    if (isNaN(formattedData.longitude)) {
+                      errors.push("Longitude must be a valid number");
+                    }
+                    
+                    if (errors.length > 0) {
+                      console.error("Validation errors:", errors);
+                      form.trigger(["latitude", "longitude"]);
+                      return;
+                    }
+                    
+                    // Handle optional fields: remove empty strings instead of setting to null
+                    const finalData = Object.fromEntries(
+                      Object.entries(formattedData).filter(([key, value]) => {
+                        // Keep required fields even if they're empty (although they shouldn't be due to validation)
+                        if (['name', 'description', 'category', 'address', 'latitude', 'longitude'].includes(key)) {
+                          return true;
+                        }
+                        // Filter out empty optional fields
+                        return value !== "" && value !== null && value !== undefined;
+                      })
+                    );
+                    
+                    console.log("Submitting final data:", finalData);
+                    createBusinessMutation.mutate(finalData as FormValues);
+                  }}
                 >
                   {createBusinessMutation.isPending ? (
                     <span className="flex items-center">
