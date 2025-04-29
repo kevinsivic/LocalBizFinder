@@ -1,0 +1,4 @@
+name,description,category,address,phone,website,latitude,longitude,imageUrl
+Local Bookstore,Independent bookstore with a wide selection of books,retail,123 Market St,555-555-1234,https://localbookstore.example.com,43.04,-78.66,https://example.com/images/bookstore.jpg
+Craft Brewery,Local brewery offering craft beers,bar,456 Brewery Ave,555-555-5678,https://craftbrewery.example.com,43.05,-78.67,https://example.com/images/brewery.jpg
+Organic Market,Fresh local produce and organic goods,groceries,789 Green St,555-555-9012,https://organicmarket.example.com,43.06,-78.68,https://example.com/images/organic.jpg

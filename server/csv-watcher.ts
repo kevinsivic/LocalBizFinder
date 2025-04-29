@@ -25,10 +25,15 @@ if (!fs.existsSync(CSV_DIRECTORY)) {
 export function startCsvWatcher() {
   log('Starting CSV watcher...', 'csv-watcher');
 
-  // Initialize the watcher
+  // Initialize the watcher to only watch the root directory, not subdirectories 
   const watcher = watch(CSV_DIRECTORY, {
-    ignored: /(^|[\/\\])\../, // ignore dotfiles
+    ignored: [
+      /(^|[\/\\])\..*/, // ignore dotfiles
+      "**/processed/**", // ignore processed directory
+      "**/error/**" // ignore error directory
+    ],
     persistent: true,
+    depth: 0, // only watch files in the root directory, not subdirectories
     awaitWriteFinish: {
       stabilityThreshold: DEBOUNCE_TIME,
       pollInterval: 100
@@ -58,10 +63,10 @@ export function startCsvWatcher() {
       if (!fs.existsSync(processedDir)) {
         fs.mkdirSync(processedDir, { recursive: true });
       }
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const timestamp = Date.now();
       const newFilePath = path.join(
         processedDir, 
-        `${path.basename(filePath, '.csv')}_${timestamp}.csv`
+        `processed_${timestamp}.csv`
       );
       fs.renameSync(filePath, newFilePath);
       log(`Moved processed file to ${newFilePath}`, 'csv-watcher');
@@ -72,10 +77,10 @@ export function startCsvWatcher() {
       if (!fs.existsSync(errorDir)) {
         fs.mkdirSync(errorDir, { recursive: true });
       }
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const timestamp = Date.now();
       const newFilePath = path.join(
         errorDir, 
-        `${path.basename(filePath, '.csv')}_${timestamp}.csv`
+        `error_${timestamp}.csv`
       );
       fs.renameSync(filePath, newFilePath);
       log(`Moved file with errors to ${newFilePath}`, 'csv-watcher');
@@ -117,8 +122,9 @@ async function processCSVFile(filePath: string): Promise<void> {
 
         // Validate and insert businesses
         try {
-          for (const [index, row] of results.entries()) {
+          for (let index = 0; index < results.length; index++) {
             try {
+              const row = results[index];
               // Convert string values to correct types
               const businessData = {
                 name: row.name,
