@@ -6,6 +6,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Business } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { trackEvent, AnalyticsEvent } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -73,11 +74,20 @@ export default function IssueReportForm({ business, isOpen, onClose }: IssueRepo
       const res = await apiRequest("POST", `/api/businesses/${business.id}/issues`, data);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Track issue report submission event
+      trackEvent(AnalyticsEvent.ISSUE_REPORT, {
+        businessId: business.id.toString(),
+        businessName: business.name,
+        issueType: variables.issueType,
+        descriptionLength: variables.description.length.toString()
+      });
+      
       toast({
         title: "Issue reported",
         description: "Thank you for helping improve the quality of our listings.",
       });
+      
       queryClient.invalidateQueries({ queryKey: [`/api/businesses/${business.id}/issues`] });
       queryClient.invalidateQueries({ queryKey: ["/api/issues"] });
       form.reset();

@@ -7,6 +7,7 @@ import { StarRating } from "@/components/ui/star-rating";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
+import { trackEvent, AnalyticsEvent } from "@/lib/analytics";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,10 +71,19 @@ export function RatingForm({ businessId, businessName, onRatingSubmitted }: Rati
       return await res.json();
     },
     onSuccess: () => {
+      // Track rating submission event
+      trackEvent(existingRating ? AnalyticsEvent.RATING_UPDATE : AnalyticsEvent.RATING_SUBMIT, {
+        businessId: businessId.toString(),
+        businessName: businessName,
+        rating: rating.toString(),
+        hasComment: comment.trim() ? 'true' : 'false'
+      });
+      
       toast({
         title: "Rating submitted",
         description: `Your rating for ${businessName} has been saved.`,
       });
+      
       queryClient.invalidateQueries({ queryKey: [`/api/businesses/${businessId}/my-rating`] });
       queryClient.invalidateQueries({ queryKey: [`/api/businesses/${businessId}/average-rating`] });
       queryClient.invalidateQueries({ queryKey: [`/api/businesses/${businessId}/ratings`] });
@@ -95,10 +105,17 @@ export function RatingForm({ businessId, businessName, onRatingSubmitted }: Rati
       await apiRequest("DELETE", `/api/businesses/${businessId}/ratings/${existingRating.id}`);
     },
     onSuccess: () => {
+      // Track rating deletion event
+      trackEvent(AnalyticsEvent.RATING_DELETE, {
+        businessId: businessId.toString(),
+        businessName: businessName
+      });
+      
       toast({
         title: "Rating deleted",
         description: `Your rating for ${businessName} has been removed.`,
       });
+      
       setRating(0);
       setComment("");
       queryClient.invalidateQueries({ queryKey: [`/api/businesses/${businessId}/my-rating`] });
