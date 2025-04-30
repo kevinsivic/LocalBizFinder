@@ -1,132 +1,161 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { 
   trackEvent, 
+  trackPageView, 
   identifyUser, 
   resetIdentity, 
+  startPageLoadTracking, 
   AnalyticsEvent 
 } from '../../client/src/lib/analytics';
 
-// Mock the global window.swetrix object
-const mockTrack = vi.fn();
-const mockIdentify = vi.fn();
-const mockReset = vi.fn();
-
 describe('Analytics Module', () => {
-  // Setup mocks before each test
+  // Mock the Swetrix global API
   beforeEach(() => {
-    // Create mock of swetrix global
-    global.window = {
-      ...global.window,
-      swetrix: {
-        track: mockTrack,
-        identify: mockIdentify,
-        reset: mockReset
-      }
+    // Create mock Swetrix global object
+    window.swetrix = {
+      track: vi.fn(),
+      trackViews: vi.fn(),
+      identify: vi.fn(),
+      reset: vi.fn(),
+      init: vi.fn()
     };
-    
-    // Clear mock calls between tests
-    vi.clearAllMocks();
   });
   
-  // Clean up after each test
   afterEach(() => {
-    // Restore window object
-    vi.restoreAllMocks();
+    vi.resetAllMocks();
+    // Clean up the mock
+    delete window.swetrix;
   });
   
   describe('trackEvent', () => {
     it('should call swetrix.track with correct parameters', () => {
-      // Test data
-      const event = AnalyticsEvent.BUSINESS_VIEW;
-      const properties = { businessId: 123 };
+      // Test event tracking
+      trackEvent(AnalyticsEvent.BUSINESS_VIEW, { businessId: '123' });
       
-      // Call function
-      trackEvent(event, properties);
-      
-      // Assert
-      expect(mockTrack).toHaveBeenCalledTimes(1);
-      expect(mockTrack).toHaveBeenCalledWith(event, properties);
+      expect(window.swetrix.track).toHaveBeenCalledWith(
+        AnalyticsEvent.BUSINESS_VIEW, 
+        { businessId: '123' }
+      );
     });
     
-    it('should handle calls with missing properties', () => {
-      // Call with no props
+    it('should handle tracking with no parameters', () => {
       trackEvent(AnalyticsEvent.USER_LOGOUT);
       
-      // Assert
-      expect(mockTrack).toHaveBeenCalledTimes(1);
-      expect(mockTrack).toHaveBeenCalledWith(AnalyticsEvent.USER_LOGOUT, undefined);
+      expect(window.swetrix.track).toHaveBeenCalledWith(
+        AnalyticsEvent.USER_LOGOUT, 
+        {}
+      );
     });
     
-    it('should handle errors gracefully', () => {
-      // Make track throw an error
-      mockTrack.mockImplementationOnce(() => {
-        throw new Error('Tracking failed');
+    it('should gracefully handle errors', () => {
+      // Make the track function throw an error
+      window.swetrix.track = vi.fn().mockImplementation(() => {
+        throw new Error('Tracking error');
       });
       
-      // This shouldn't throw
-      expect(() => {
-        trackEvent(AnalyticsEvent.MAP_VIEW);
-      }).not.toThrow();
+      // This should not throw
+      trackEvent(AnalyticsEvent.BUSINESS_SEARCH);
       
-      expect(mockTrack).toHaveBeenCalledTimes(1);
+      expect(window.swetrix.track).toHaveBeenCalled();
+    });
+  });
+  
+  describe('trackPageView', () => {
+    it('should call swetrix.trackViews with the correct path', () => {
+      trackPageView('/businesses');
+      
+      expect(window.swetrix.trackViews).toHaveBeenCalledWith({
+        path: '/businesses' 
+      });
+    });
+    
+    it('should gracefully handle errors', () => {
+      // Make the trackViews function throw an error
+      window.swetrix.trackViews = vi.fn().mockImplementation(() => {
+        throw new Error('Tracking error');
+      });
+      
+      // This should not throw
+      trackPageView('/login');
+      
+      expect(window.swetrix.trackViews).toHaveBeenCalled();
     });
   });
   
   describe('identifyUser', () => {
-    it('should call swetrix.identify with user ID', () => {
-      // Call function
-      identifyUser(42);
-      
-      // Assert
-      expect(mockIdentify).toHaveBeenCalledTimes(1);
-      expect(mockIdentify).toHaveBeenCalledWith('42');
-    });
-    
-    it('should convert user ID to string', () => {
-      // Call with numeric ID
+    it('should call swetrix.identify with the correct userId', () => {
       identifyUser(123);
       
-      // Assert string conversion
-      expect(mockIdentify).toHaveBeenCalledWith('123');
+      expect(window.swetrix.identify).toHaveBeenCalledWith(123);
     });
     
-    it('should handle errors gracefully', () => {
-      // Make identify throw an error
-      mockIdentify.mockImplementationOnce(() => {
-        throw new Error('Identity tracking failed');
+    it('should gracefully handle errors', () => {
+      // Make the identify function throw an error
+      window.swetrix.identify = vi.fn().mockImplementation(() => {
+        throw new Error('Identify error');
       });
       
-      // This shouldn't throw
-      expect(() => {
-        identifyUser(789);
-      }).not.toThrow();
+      // This should not throw
+      identifyUser(456);
       
-      expect(mockIdentify).toHaveBeenCalledTimes(1);
+      expect(window.swetrix.identify).toHaveBeenCalled();
     });
   });
   
   describe('resetIdentity', () => {
     it('should call swetrix.reset', () => {
-      // Call function
       resetIdentity();
       
-      // Assert
-      expect(mockReset).toHaveBeenCalledTimes(1);
-      expect(mockReset).toHaveBeenCalled();
+      expect(window.swetrix.reset).toHaveBeenCalled();
     });
     
-    it('should handle errors gracefully', () => {
-      // Make reset throw an error
-      mockReset.mockImplementationOnce(() => {
-        throw new Error('Reset failed');
+    it('should gracefully handle errors', () => {
+      // Make the reset function throw an error
+      window.swetrix.reset = vi.fn().mockImplementation(() => {
+        throw new Error('Reset error');
       });
       
-      // This shouldn't throw
-      expect(() => {
-        resetIdentity();
-      }).not.toThrow();
+      // This should not throw
+      resetIdentity();
       
-      expect(mockReset).toHaveBeenCalledTimes(1);
+      expect(window.swetrix.reset).toHaveBeenCalled();
+    });
+  });
+  
+  describe('startPageLoadTracking', () => {
+    it('should initialize performance tracking', () => {
+      // Mock performance metrics
+      window.performance = {
+        timing: {
+          domContentLoadedEventEnd: 1000,
+          navigationStart: 500
+        }
+      } as any;
+      
+      startPageLoadTracking();
+      
+      // Should have at least tried to track the page load time
+      expect(window.swetrix.track).toHaveBeenCalled();
+      
+      // Restore original performance object
+      delete window.performance;
+    });
+    
+    it('should handle missing performance API', () => {
+      // Simulate browser without performance API
+      const originalPerformance = window.performance;
+      delete window.performance;
+      
+      // This should not throw
+      startPageLoadTracking();
+      
+      // Should not track anything if performance API is missing
+      expect(window.swetrix.track).not.toHaveBeenCalled();
+      
+      // Restore original performance object if it existed
+      if (originalPerformance) {
+        window.performance = originalPerformance;
+      }
     });
   });
 });

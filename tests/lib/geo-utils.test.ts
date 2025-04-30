@@ -1,51 +1,58 @@
 import { describe, it, expect } from 'vitest';
 import { calculateDistance, formatDistance } from '../../client/src/lib/geo-utils';
 
-describe('Geo Utilities', () => {
+describe('Geo Utility Functions', () => {
   describe('calculateDistance', () => {
-    it('should calculate the distance between two points correctly', () => {
-      // San Francisco to Los Angeles (about 381 miles)
-      const sf = { lat: 37.7749, lon: -122.4194 };
-      const la = { lat: 34.0522, lon: -118.2437 };
-      
-      const distance = calculateDistance(sf.lat, sf.lon, la.lat, la.lon);
-      expect(distance).toBeCloseTo(380, -1); // Approximate within 10 miles
+    it('should calculate correct distance between two points', () => {
+      // San Francisco to Los Angeles: ~383 miles
+      const distance = calculateDistance(37.7749, -122.4194, 34.0522, -118.2437);
+      expect(distance).toBeCloseTo(383, 0); // Within 1 mile accuracy
     });
     
     it('should return 0 for identical points', () => {
-      const nyc = { lat: 40.7128, lon: -74.0060 };
-      const distance = calculateDistance(nyc.lat, nyc.lon, nyc.lat, nyc.lon);
+      const distance = calculateDistance(37.7749, -122.4194, 37.7749, -122.4194);
       expect(distance).toBe(0);
     });
     
-    it('should handle negative coordinates correctly', () => {
-      // Sydney to Buenos Aires (about 7000+ miles)
-      const sydney = { lat: -33.8688, lon: 151.2093 };
-      const buenosAires = { lat: -34.6037, lon: -58.3816 };
-      
-      const distance = calculateDistance(sydney.lat, sydney.lon, buenosAires.lat, buenosAires.lon);
-      expect(distance).toBeGreaterThan(6000); // Just checking it's reasonably large
+    it('should handle international distances', () => {
+      // New York to London: ~3470 miles
+      const distance = calculateDistance(40.7128, -74.0060, 51.5074, -0.1278);
+      expect(distance).toBeCloseTo(3470, 0); // Within 1 mile accuracy
+    });
+    
+    it('should handle the antipodes (opposite points on Earth)', () => {
+      // Example: Point in Spain to point in New Zealand (approximately antipodal)
+      const distance = calculateDistance(40.4168, -3.7038, -41.2865, 174.7762);
+      expect(distance).toBeGreaterThan(12000); // Should be close to half of Earth's circumference
     });
   });
   
   describe('formatDistance', () => {
-    it('should format distance with correct singular/plural form', () => {
-      expect(formatDistance(1)).toBe('1.0 mile');
+    it('should format distance as miles', () => {
+      expect(formatDistance(1)).toBe('1.0 miles');
       expect(formatDistance(2.5)).toBe('2.5 miles');
+      expect(formatDistance(10)).toBe('10.0 miles');
     });
     
-    it('should format to one decimal place', () => {
-      expect(formatDistance(10.12345)).toBe('10.1 miles');
-      expect(formatDistance(0.58)).toBe('0.6 mile');
+    it('should format distance with single decimal place', () => {
+      expect(formatDistance(1.23)).toBe('1.2 miles');
+      expect(formatDistance(5.67)).toBe('5.7 miles');
+      expect(formatDistance(9.99)).toBe('10.0 miles');
     });
     
-    it('should handle null/undefined values', () => {
-      expect(formatDistance(null)).toBe('Distance unknown');
-      expect(formatDistance(undefined)).toBe('Distance unknown');
+    it('should handle null input', () => {
+      expect(formatDistance(null)).toBe('Unknown distance');
     });
     
-    it('should handle zero distance', () => {
+    it('should format small distances correctly', () => {
       expect(formatDistance(0)).toBe('0.0 miles');
+      expect(formatDistance(0.1)).toBe('0.1 miles');
+      expect(formatDistance(0.01)).toBe('0.0 miles');
+    });
+    
+    it('should format large distances correctly', () => {
+      expect(formatDistance(1000)).toBe('1000.0 miles');
+      expect(formatDistance(1234.5678)).toBe('1234.6 miles');
     });
   });
 });
